@@ -1,15 +1,3 @@
-# Men-deploy workload ke namespace dev/prod memakai chart generik.
-#
-# Pola image dari pipeline app: satu repo Docker Hub, tag "<service>-<sha>" dan "<service>-latest".
-# Pipeline app hanya membangun service yang kodenya berubah, jadi tag sha TIDAK ada untuk semua service.
-#
-# Mode:
-#   dev + DEPLOY_SERVICES + IMAGE_TAG -> selektif: hanya service itu, tag "<service>-<IMAGE_TAG>"
-#   dev + IMAGE_TAG saja              -> semua service dengan tag "<service>-<IMAGE_TAG>" (hanya jika semua image ada)
-#   dev tanpa variabel                -> semua service, pakai tag yang sedang berjalan (atau "<service>-latest" pertama kali)
-#   prod                              -> PROMOSI: pakai tag yang sedang berjalan di dev (apa yang teruji di dev yang naik ke prod)
-#
-# Usage: [IMAGE_TAG=<sha>] [DEPLOY_SERVICES="aggregator notifier"] ./scripts/deploy.sh <dev|prod>
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/env.sh
@@ -18,7 +6,6 @@ ENV_NAME="${1:?usage: deploy.sh <dev|prod>}"
 SHA="${IMAGE_TAG:-}"
 SELECTED="${DEPLOY_SERVICES:-}"
 CHART=charts/microservice
-# Repo image = satu repo Docker Hub untuk semua (app + mirror mongo/rabbitmq); username dari CI variable
 APP_IMAGE_NAME="${APP_IMAGE_NAME:-if4054-2026-t1-13523008-13523029-13523040}"
 IMAGE_REPO="${IMAGE_REPO:-${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME belum diisi}/$APP_IMAGE_NAME}"
 
@@ -44,7 +31,7 @@ else
 fi
 echo "Mode deploy: $MODE (env=$ENV_NAME sha=${SHA:-none} services=${SELECTED:-semua})"
 
-current_tag() {   # tag yang sedang terpasang: current_tag <namespace> <release>
+current_tag() {
   helm get values "$2" -n "$1" -o json 2>/dev/null | jq -r '.image.tag // empty' || true
 }
 
@@ -66,7 +53,6 @@ deploy() {
     --atomic --wait --timeout 5m
 }
 
-# mongo & rabbitmq (image dari mirror, tag ada di values) - tidak disentuh pada deploy selektif
 if [ "$MODE" != "selective" ]; then
   for s in "${INFRA_SERVICES[@]}"; do deploy "$s"; done
 fi

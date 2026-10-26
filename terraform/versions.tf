@@ -8,7 +8,5 @@ terraform {
     }
   }
 
-  # Lokasi state diisi saat init (-backend-config="path=..."), lihat scripts/cluster-up.sh.
-  # State disimpan di mesin host runner agar tidak hilang antar job CI.
   backend "local" {}
 }

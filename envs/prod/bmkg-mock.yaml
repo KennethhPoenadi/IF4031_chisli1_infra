@@ -1,7 +1,6 @@
 service:
   port: 8081
 
-
 env:
   BMKG_PORT: "8081"
   BMKG_DELAY_MS: "100"

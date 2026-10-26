@@ -1,4 +1,3 @@
-# FALLBACK jika provider Terraform kind bermasalah. Tetap IaC (konfigurasi ada di git).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/env.sh

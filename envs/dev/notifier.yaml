@@ -1,7 +1,6 @@
 service:
   port: 8093
 
-# consumer RabbitMQ dengan queue yang sama = competing consumers, aman >1 replika
 env:
   RABBITMQ_EXCHANGE: hazard_events
   NOTIFIER_QUEUE: notifier-queue
@@ -11,7 +10,6 @@ env:
   NOTIFIER_PROCESS_DELAY_MS: "0"
   NOTIFIER_HEALTH_PORT: "8093"
 
-# URL Mongo/RabbitMQ dirakit di extraEnv dari key MONGO_ROOT_*/RABBITMQ_* di app-secrets
 secretRefs: [app-secrets]
 
 extraEnv:

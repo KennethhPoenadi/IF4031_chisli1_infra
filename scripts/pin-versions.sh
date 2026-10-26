@@ -1,5 +1,3 @@
-# Mengambil versi chart stabil terbaru lalu menuliskannya ke platform/versions.env.
-# Jalankan SEKALI, lalu commit hasilnya agar instalasi reproducible.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -17,7 +15,6 @@ M=$(latest metrics-server/metrics-server)
 K=$(latest kyverno/kyverno)
 
 cat > platform/versions.env <<EOF
-# Dihasilkan oleh scripts/pin-versions.sh
 TRAEFIK_VERSION=$T
 METRICS_SERVER_VERSION=$M
 KYVERNO_VERSION=$K

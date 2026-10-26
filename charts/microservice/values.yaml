@@ -1,13 +1,10 @@
 image:
   repository: ""
-  # wajib diisi saat deploy (--set image.tag=<service>-<commit sha>), tidak ada default agar tidak jatuh ke :latest
   tag: ""
   pullPolicy: IfNotPresent
-# dibuat create-secrets.sh; tidak masalah bila image publik
 imagePullSecrets:
   - name: gitlab-registry
 
-# Deployment untuk service aplikasi, StatefulSet untuk mongo/rabbitmq (butuh PVC)
 kind: Deployment
 
 replicaCount: 1
@@ -17,7 +14,6 @@ service:
 
 env: {}
 secretRefs: []
-# Env mentah Kubernetes (secretKeyRef, $(VAR) untuk merakit URL). Ditulis sebelum envFrom.
 extraEnv: []
 args: []
 extraVolumes: []
@@ -63,7 +59,6 @@ ingress:
   host: ""
   path: /
 
-# Hanya dipakai kind: StatefulSet
 persistence:
   enabled: false
   size: 1Gi

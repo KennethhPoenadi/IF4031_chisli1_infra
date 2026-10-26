@@ -8,7 +8,6 @@ default:
 variables:
   REQUIRE_CHART: "false"
   MIRROR_IMAGES: "mongo:7 rabbitmq:3-management"
-  # satu repo untuk semua image: mongo:7 -> <user>/<repo>:mongo-7 (cocok dengan tag di envs/*/mongo.yaml)
   MIRROR_REPO: "docker.io/$DOCKERHUB_USERNAME/if4054-2026-t1-13523008-13523029-13523040"
 
 validate:
@@ -63,6 +62,7 @@ deploy-dev:
     - ./scripts/deploy.sh dev
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
+      changes: [envs/dev/**/*, charts/**/*, scripts/**/*]
 
 deploy-prod:
   stage: deploy-prod
@@ -80,5 +80,6 @@ deploy-prod:
     - ./scripts/deploy.sh prod
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
+      changes: [envs/prod/**/*, charts/**/*, scripts/**/*]
       when: manual
       allow_failure: false

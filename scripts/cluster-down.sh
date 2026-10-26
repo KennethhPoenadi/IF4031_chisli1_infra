@@ -1,4 +1,3 @@
-# Menghapus cluster (untuk uji "bangun ulang dari nol").
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/env.sh

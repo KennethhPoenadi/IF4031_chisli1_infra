@@ -1,6 +1,3 @@
-# Membuat Secret di namespace target: image pull secret + app-secrets. Idempoten.
-# Usage : ./scripts/create-secrets.sh <dev|prod>
-# Lokal : ENV_FILE=.env REGISTRY_SERVER=... REGISTRY_USER=... REGISTRY_PASS=... ./scripts/create-secrets.sh dev
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/env.sh
@@ -13,8 +10,6 @@ fi
 
 kubectl create namespace "$ENV_NAME" --dry-run=client -o yaml | kubectl apply -f -
 
-# 1. Image pull secret ke registry GitLab
-# Registry = Docker Hub (GitLab Edu ITB tidak menyediakan Container Registry).
 : "${REGISTRY_SERVER:=https://index.docker.io/v1/}"
 REGISTRY_USER="${REGISTRY_USER:-${DOCKERHUB_USERNAME:-}}"
 REGISTRY_PASS="${REGISTRY_PASS:-${DOCKERHUB_TOKEN:-}}"
@@ -27,7 +22,6 @@ kubectl create secret docker-registry gitlab-registry \
   --docker-password="$REGISTRY_PASS" \
   -n "$ENV_NAME" --dry-run=client -o yaml | kubectl apply -f -
 
-# 2. Secret aplikasi
 args=()
 missing=()
 while read -r key; do

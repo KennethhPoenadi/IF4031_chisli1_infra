@@ -1,4 +1,3 @@
-# Membuat/memperbarui cluster kind lewat Terraform (idempoten).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/env.sh

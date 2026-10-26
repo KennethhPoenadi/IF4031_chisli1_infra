@@ -1,4 +1,3 @@
-# Image dari mirror (mirror-images.sh): <user>/<repo>:mongo-7 -> repository diisi deploy.sh
 kind: StatefulSet
 replicaCount: 1
 
@@ -11,7 +10,6 @@ service:
 autoscaling:
   enabled: false
 
-# user "mongodb" di image resmi = UID 999
 podSecurityContext:
   runAsUser: 999
   runAsGroup: 999
@@ -22,7 +20,6 @@ persistence:
   size: 2Gi
   mountPath: /data/db
 
-# root fs read-only: /data/configdb dan /tmp perlu emptyDir
 extraVolumes:
   - name: configdb
     emptyDir: {}

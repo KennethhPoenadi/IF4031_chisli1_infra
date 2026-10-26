@@ -1,7 +1,6 @@
 service:
   port: 8090
 
-
 env:
   AGGREGATOR_PORT: "8090"
   MONGO_DB_NAME: bnpb_canonical
@@ -43,7 +42,6 @@ extraEnv:
   - name: RABBITMQ_URL
     value: amqp://$(RABBITMQ_USER):$(RABBITMQ_PASSWORD)@rabbitmq:5672/
 
-# /health aggregator gagal bila Mongo mati; restart tidak membantu, jadi liveness cukup cek port
 livenessProbe:
   httpGet: null
   tcpSocket: { port: http }

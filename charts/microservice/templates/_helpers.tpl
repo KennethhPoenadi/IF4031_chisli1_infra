@@ -1,4 +1,3 @@
-{{/* Nama resource = nama release, supaya nama Service sama dengan docker-compose (aggregator, mongo, ...) */}}
 {{- define "microservice.name" -}}
 {{- .Release.Name -}}
 {{- end -}}
@@ -15,7 +14,6 @@ app.kubernetes.io/name: {{ include "microservice.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
-{{/* Pod template bersama Deployment dan StatefulSet: aturan keamanan hanya ditulis sekali */}}
 {{- define "microservice.podTemplate" -}}
 metadata:
   labels:

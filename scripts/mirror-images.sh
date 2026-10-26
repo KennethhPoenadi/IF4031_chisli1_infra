@@ -1,17 +1,3 @@
-# Menyalin image pihak ketiga (mongo, rabbitmq) ke registry kelompok,
-# supaya lolos aturan "hanya image dari registry kita".
-#
-# Dua mode tujuan (pilih salah satu):
-#   MIRROR_REPO=docker.io/<ns>/<repo-app>   -> satu repo, tag "<nama>-<tag>"
-#        mongo:7.0  ->  docker.io/<ns>/<repo-app>:mongo-7.0      (REKOMENDASI: sama dengan pola image app,
-#                                                                  dan hemat jatah repo private Docker Hub)
-#   MIRROR_PREFIX=docker.io/<ns>             -> repo terpisah per image
-#        mongo:7.0  ->  docker.io/<ns>/mongo:7.0
-# Jika keduanya kosong dan DOCKERHUB_USERNAME ada, dipakai MIRROR_PREFIX=docker.io/$DOCKERHUB_USERNAME.
-#
-# Kredensial (hak PUSH): REGISTRY_USER/REGISTRY_PASS, atau DOCKERHUB_USERNAME/DOCKERHUB_TOKEN
-# (variabel yang sama dengan pipeline app).
-# Gunakan versi image yang SAMA dengan docker-compose.yml di repo app.
 set -euo pipefail
 
 if [ $# -eq 0 ]; then echo "usage: $0 image:tag [image:tag ...]" >&2; exit 1; fi

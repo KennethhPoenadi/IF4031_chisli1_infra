@@ -1,7 +1,6 @@
 service:
   port: 8092
 
-
 env:
   RABBITMQ_EXCHANGE: hazard_events
   BINDING_KEY: "hazard.#"
@@ -9,7 +8,6 @@ env:
   DASHBOARD_UPDATER_PREFETCH: "10"
   DASHBOARD_UPDATER_HEALTH_PORT: "8092"
 
-# URL Mongo/RabbitMQ dirakit di extraEnv dari key MONGO_ROOT_*/RABBITMQ_* di app-secrets
 secretRefs: [app-secrets]
 
 extraEnv:

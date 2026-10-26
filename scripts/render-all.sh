@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Render semua workload (dev + prod) ke stdout, untuk divalidasi CI: ./scripts/render-all.sh | kubeconform -strict -summary
 set -euo pipefail
 cd "$(dirname "$0")/.."
 TAG=${IMAGE_TAG:-validate}

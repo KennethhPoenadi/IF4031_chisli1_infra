@@ -1,3 +1,2 @@
-# kind memakai sertifikat kubelet self-signed
 args:
   - --kubelet-insecure-tls

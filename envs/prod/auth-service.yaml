@@ -5,7 +5,6 @@ ingress:
   enabled: true
   host: auth.prod.localtest.me
 
-
 env:
   AUTH_PORT: "8091"
   AUTH_ACCESS_TTL_SECONDS: "60"

@@ -1,4 +1,3 @@
-# Memasang Traefik (ingress), metrics-server (untuk HPA), Kyverno, dan namespace dev/prod.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/env.sh

@@ -1,4 +1,3 @@
-# Pemeriksaan statis. Tool yang belum terpasang dilewati dengan pesan SKIP.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
