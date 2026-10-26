@@ -1,0 +1,24 @@
+image:
+  # TODO: ganti <dockerhub-user>; tag diisi deploy.sh (--set image.tag=client-facing-api-<sha>)
+  repository: <dockerhub-user>/if4054-2026-t1-13523008-13523029-13523040
+
+service:
+  port: 8080
+
+ingress:
+  enabled: true
+  host: api.dev.localtest.me
+
+autoscaling:
+  maxReplicas: 3
+
+env:
+  CLIENT_API_PORT: "8080"
+  AGGREGATOR_URL: http://aggregator:8090
+  AUTH_SERVICE_URL: http://auth-service:8091
+  AUTH_TOKEN_ISSUER: bnpb-auth
+  CLIENT_API_AGGREGATOR_TIMEOUT_MS: "1500"
+  CLIENT_API_MAX_INFLIGHT: "200"
+  CLIENT_API_REVOCATION_POLL_MS: "1000"
+
+secretRefs: [app-secrets]

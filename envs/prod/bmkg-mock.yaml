@@ -1,0 +1,16 @@
+image:
+  # TODO: ganti <dockerhub-user>; tag diisi deploy.sh (--set image.tag=bmkg-mock-<sha>)
+  repository: <dockerhub-user>/if4054-2026-t1-13523008-13523029-13523040
+
+service:
+  port: 8081
+
+
+env:
+  BMKG_PORT: "8081"
+  BMKG_DELAY_MS: "100"
+  BMKG_SEED_COUNT: "20"
+  BMKG_GENERATION_INTERVAL_SECONDS: "10"
+  BMKG_RANDOM_SEED: "4031"
+
+secretRefs: [app-secrets]

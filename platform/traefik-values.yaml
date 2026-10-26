@@ -1,6 +1,3 @@
-# Traefik sebagai Ingress controller di kind.
-# Pod Traefik dipaksa ke node ber-label ingress-ready=true (control-plane),
-# lalu mengikat port 80/443 node, yang dipetakan kind ke host.
 ingressClass:
   enabled: true
   isDefaultClass: true

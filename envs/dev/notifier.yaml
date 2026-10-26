@@ -1,0 +1,19 @@
+image:
+  # TODO: ganti <dockerhub-user>; tag diisi deploy.sh (--set image.tag=notifier-<sha>)
+  repository: <dockerhub-user>/if4054-2026-t1-13523008-13523029-13523040
+
+service:
+  port: 8093
+
+# consumer RabbitMQ dengan queue yang sama = competing consumers, aman >1 replika
+env:
+  RABBITMQ_EXCHANGE: hazard_events
+  NOTIFIER_QUEUE: notifier-queue
+  NOTIFIER_BINDING_KEYS: "hazard.#"
+  NOTIFIER_PREFETCH: "10"
+  NOTIFIER_MIN_SEVERITY: WASPADA
+  NOTIFIER_PROCESS_DELAY_MS: "0"
+  NOTIFIER_HEALTH_PORT: "8093"
+
+# RABBITMQ_URL
+secretRefs: [app-secrets]

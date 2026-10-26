@@ -1,12 +1,12 @@
-# Render semua values dev/prod menjadi manifest (untuk kubeconform di CI).
+#!/usr/bin/env bash
+# Render semua workload (dev + prod) ke stdout, untuk divalidasi CI: ./scripts/render-all.sh | kubeconform -strict -summary
 set -euo pipefail
 cd "$(dirname "$0")/.."
-[ -f charts/microservice/Chart.yaml ] || exit 0
+TAG=${IMAGE_TAG:-validate}
 for env in dev prod; do
   for f in envs/$env/*.yaml; do
-    [ -f "$f" ] || continue
-    svc="$(basename "$f" .yaml)"
-    helm template "$svc" charts/microservice -n "$env" -f "$f" --set image.tag=validate
+    s=$(basename "$f" .yaml)
     echo "---"
+    helm template "$s" charts/microservice -n "$env" -f "$f" --set "image.tag=$s-$TAG"
   done
 done

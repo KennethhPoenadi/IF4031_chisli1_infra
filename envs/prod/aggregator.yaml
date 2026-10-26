@@ -1,0 +1,21 @@
+image:
+  repository: <dockerhub-user>/if4054-2026-t1-13523008-13523029-13523040
+
+service:
+  port: 8090
+
+
+env:
+  AGGREGATOR_PORT: "8090"
+  MONGO_DB_NAME: bnpb_canonical
+  MONGO_HAZARD_COLLECTION: hazard_events
+  RABBITMQ_EXCHANGE: hazard_events
+  RABBITMQ_EXCHANGE_TYPE: topic
+  BMKG_BASE_URL: http://bmkg-mock:8081
+  PVMBG_BASE_URL: http://pvmbg-mock:8082
+  AGGREGATOR_POLL_INTERVAL_SECONDS: "5"
+  AGGREGATOR_BMKG_TIMEOUT_MS: "2000"
+  AGGREGATOR_PVMBG_TIMEOUT_MS: "4000"
+  AGGREGATOR_PVMBG_STALE_AFTER_SECONDS: "30"
+
+secretRefs: [app-secrets]

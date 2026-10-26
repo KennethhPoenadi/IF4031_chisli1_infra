@@ -1,0 +1,20 @@
+image:
+  # TODO: ganti <dockerhub-user>; tag diisi deploy.sh (--set image.tag=auth-service-<sha>)
+  repository: <dockerhub-user>/if4054-2026-t1-13523008-13523029-13523040
+
+service:
+  port: 8091
+
+ingress:
+  enabled: true
+  host: auth.dev.localtest.me
+
+
+env:
+  AUTH_PORT: "8091"
+  AUTH_ACCESS_TTL_SECONDS: "60"
+  AUTH_REFRESH_TTL_SECONDS: "600"
+  AUTH_TOKEN_ISSUER: bnpb-auth
+
+# AUTH_SIGNING_SEED, AUTH_INTERNAL_KEY, AUTH_CLIENT_{MEDIA,FIELD,OPS}_{ID,SECRET}
+secretRefs: [app-secrets]

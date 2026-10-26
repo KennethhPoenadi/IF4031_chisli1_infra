@@ -1,0 +1,17 @@
+image:
+  # TODO: ganti <dockerhub-user>; tag diisi deploy.sh (--set image.tag=dashboard-updater-<sha>)
+  repository: <dockerhub-user>/if4054-2026-t1-13523008-13523029-13523040
+
+service:
+  port: 8092
+
+
+env:
+  RABBITMQ_EXCHANGE: hazard_events
+  BINDING_KEY: "hazard.#"
+  DASHBOARD_UPDATER_QUEUE: dashboard-updater-queue
+  DASHBOARD_UPDATER_PREFETCH: "10"
+  DASHBOARD_UPDATER_HEALTH_PORT: "8092"
+
+# RABBITMQ_URL
+secretRefs: [app-secrets]
