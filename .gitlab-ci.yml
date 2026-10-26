@@ -1,0 +1,86 @@
+# Semua job berjalan di runner self-hosted (tag k8s-local)
+# yang berada di mesin yang sama dengan cluster kind.
+stages: [validate, mirror, cluster, platform, policies, deploy-dev, deploy-prod]
+
+default:
+  tags: [k8s-local]
+  before_script:
+    - source scripts/env.sh
+
+variables:
+  # Ubah ke "true" setelah chart ada, supaya deploy yang tidak punya chart gagal (bukan di-skip).
+  REQUIRE_CHART: "false"
+  # Samakan versinya dengan docker-compose.yml di repo app.
+  MIRROR_IMAGES: "mongo:7 rabbitmq:3-management"
+
+validate:
+  stage: validate
+  script:
+    - ./scripts/validate.sh
+
+mirror-images:
+  stage: mirror
+  script:
+    - ./scripts/mirror-images.sh $MIRROR_IMAGES
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+      allow_failure: true
+
+cluster:
+  stage: cluster
+  resource_group: xops-cluster
+  script:
+    - ./scripts/cluster-up.sh
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE != "pipeline"
+
+platform:
+  stage: platform
+  resource_group: xops-cluster
+  script:
+    - ./scripts/platform.sh
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE != "pipeline"
+
+policies:
+  stage: policies
+  resource_group: xops-cluster
+  script:
+    - |
+      if ls policies/kyverno/*.yaml >/dev/null 2>&1; then
+        kubectl apply -f policies/kyverno/
+      else
+        echo "WARN: belum ada policy di policies/kyverno"
+      fi
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+deploy-dev:
+  stage: deploy-dev
+  resource_group: xops-cluster
+  environment:
+    name: dev
+  script:
+    - ./scripts/deploy.sh dev
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+deploy-prod:
+  stage: deploy-prod
+  resource_group: xops-cluster
+  environment:
+    name: prod
+  script:
+    - |
+      if [ -z "${PROD_APPROVER:-}" ]; then
+        echo "ERROR: CI variable PROD_APPROVER belum diisi"; exit 1
+      fi
+      if [ "$GITLAB_USER_LOGIN" != "$PROD_APPROVER" ]; then
+        echo "ERROR: hanya $PROD_APPROVER yang boleh menyetujui deploy ke prod"; exit 1
+      fi
+    - ./scripts/deploy.sh prod
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+      allow_failure: false
