@@ -1,0 +1,50 @@
+# Image dari mirror (mirror-images.sh): <user>/<repo>:rabbitmq-3-management -> repository diisi deploy.sh
+kind: StatefulSet
+replicaCount: 1
+
+image:
+  tag: rabbitmq-3-management
+
+service:
+  port: 5672
+
+autoscaling:
+  enabled: false
+
+# user "rabbitmq" di image resmi = UID 999
+podSecurityContext:
+  runAsUser: 999
+  runAsGroup: 999
+  fsGroup: 999
+
+persistence:
+  enabled: true
+  size: 1Gi
+  mountPath: /var/lib/rabbitmq
+
+resources:
+  requests: { cpu: 100m, memory: 256Mi }
+  limits: { cpu: 500m, memory: 512Mi }
+
+extraEnv:
+  - name: RABBITMQ_DEFAULT_USER
+    valueFrom:
+      secretKeyRef: { name: app-secrets, key: RABBITMQ_USER }
+  - name: RABBITMQ_DEFAULT_PASS
+    valueFrom:
+      secretKeyRef: { name: app-secrets, key: RABBITMQ_PASSWORD }
+
+livenessProbe:
+  httpGet: null
+  exec:
+    command: [rabbitmq-diagnostics, -q, ping]
+  initialDelaySeconds: 30
+  periodSeconds: 15
+  timeoutSeconds: 10
+readinessProbe:
+  httpGet: null
+  exec:
+    command: [rabbitmq-diagnostics, -q, check_port_connectivity]
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  timeoutSeconds: 10

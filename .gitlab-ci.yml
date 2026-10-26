@@ -8,6 +8,8 @@ default:
 variables:
   REQUIRE_CHART: "false"
   MIRROR_IMAGES: "mongo:7 rabbitmq:3-management"
+  # satu repo untuk semua image: mongo:7 -> <user>/<repo>:mongo-7 (cocok dengan tag di envs/*/mongo.yaml)
+  MIRROR_REPO: "docker.io/$DOCKERHUB_USERNAME/if4054-2026-t1-13523008-13523029-13523040"
 
 validate:
   stage: validate

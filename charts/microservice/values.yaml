@@ -7,6 +7,9 @@ image:
 imagePullSecrets:
   - name: gitlab-registry
 
+# Deployment untuk service aplikasi, StatefulSet untuk mongo/rabbitmq (butuh PVC)
+kind: Deployment
+
 replicaCount: 1
 
 service:
@@ -16,6 +19,9 @@ env: {}
 secretRefs: []
 # Env mentah Kubernetes (secretKeyRef, $(VAR) untuk merakit URL). Ditulis sebelum envFrom.
 extraEnv: []
+args: []
+extraVolumes: []
+extraVolumeMounts: []
 
 resources:
   requests: { cpu: 50m, memory: 64Mi }
@@ -56,3 +62,10 @@ ingress:
   className: traefik
   host: ""
   path: /
+
+# Hanya dipakai kind: StatefulSet
+persistence:
+  enabled: false
+  size: 1Gi
+  mountPath: ""
+  storageClass: ""

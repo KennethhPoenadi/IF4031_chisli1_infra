@@ -1,0 +1,60 @@
+# Image dari mirror (mirror-images.sh): <user>/<repo>:mongo-7 -> repository diisi deploy.sh
+kind: StatefulSet
+replicaCount: 1
+
+image:
+  tag: mongo-7
+
+service:
+  port: 27017
+
+autoscaling:
+  enabled: false
+
+# user "mongodb" di image resmi = UID 999
+podSecurityContext:
+  runAsUser: 999
+  runAsGroup: 999
+  fsGroup: 999
+
+persistence:
+  enabled: true
+  size: 2Gi
+  mountPath: /data/db
+
+# root fs read-only: /data/configdb dan /tmp perlu emptyDir
+extraVolumes:
+  - name: configdb
+    emptyDir: {}
+extraVolumeMounts:
+  - name: configdb
+    mountPath: /data/configdb
+
+args: [mongod, --wiredTigerCacheSizeGB=0.25]
+
+resources:
+  requests: { cpu: 100m, memory: 256Mi }
+  limits: { cpu: 500m, memory: 512Mi }
+
+extraEnv:
+  - name: MONGO_INITDB_ROOT_USERNAME
+    valueFrom:
+      secretKeyRef: { name: app-secrets, key: MONGO_ROOT_USERNAME }
+  - name: MONGO_INITDB_ROOT_PASSWORD
+    valueFrom:
+      secretKeyRef: { name: app-secrets, key: MONGO_ROOT_PASSWORD }
+
+livenessProbe:
+  httpGet: null
+  exec:
+    command: [mongosh, --quiet, --eval, "db.adminCommand('ping').ok"]
+  initialDelaySeconds: 30
+  periodSeconds: 15
+  timeoutSeconds: 10
+readinessProbe:
+  httpGet: null
+  exec:
+    command: [mongosh, --quiet, --eval, "db.adminCommand('ping').ok"]
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  timeoutSeconds: 10
