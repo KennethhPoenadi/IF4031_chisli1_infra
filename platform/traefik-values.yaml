@@ -1,0 +1,29 @@
+# Traefik sebagai Ingress controller di kind.
+# Pod Traefik dipaksa ke node ber-label ingress-ready=true (control-plane),
+# lalu mengikat port 80/443 node, yang dipetakan kind ke host.
+ingressClass:
+  enabled: true
+  isDefaultClass: true
+
+providers:
+  kubernetesIngress:
+    enabled: true
+    publishedService:
+      enabled: false
+
+ports:
+  web:
+    hostPort: 80
+  websecure:
+    hostPort: 443
+
+service:
+  type: ClusterIP
+
+nodeSelector:
+  ingress-ready: "true"
+
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
