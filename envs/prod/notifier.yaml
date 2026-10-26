@@ -15,5 +15,19 @@ env:
   NOTIFIER_PROCESS_DELAY_MS: "0"
   NOTIFIER_HEALTH_PORT: "8093"
 
-# RABBITMQ_URL
+# URL Mongo/RabbitMQ dirakit di extraEnv dari key MONGO_ROOT_*/RABBITMQ_* di app-secrets
 secretRefs: [app-secrets]
+
+extraEnv:
+  - name: RABBITMQ_USER
+    valueFrom:
+      secretKeyRef:
+        name: app-secrets
+        key: RABBITMQ_USER
+  - name: RABBITMQ_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: app-secrets
+        key: RABBITMQ_PASSWORD
+  - name: RABBITMQ_URL
+    value: amqp://$(RABBITMQ_USER):$(RABBITMQ_PASSWORD)@rabbitmq:5672/

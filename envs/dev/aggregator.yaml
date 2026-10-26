@@ -19,5 +19,38 @@ env:
   AGGREGATOR_PVMBG_TIMEOUT_MS: "4000"
   AGGREGATOR_PVMBG_STALE_AFTER_SECONDS: "30"
 
-# MONGO_URI, RABBITMQ_URL, AGGREGATOR_API_KEY, BMKG_API_KEY, PVMBG_TOKEN
+# URL Mongo/RabbitMQ dirakit di extraEnv dari key MONGO_ROOT_*/RABBITMQ_* di app-secrets
 secretRefs: [app-secrets]
+
+extraEnv:
+  - name: MONGO_ROOT_USERNAME
+    valueFrom:
+      secretKeyRef:
+        name: app-secrets
+        key: MONGO_ROOT_USERNAME
+  - name: MONGO_ROOT_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: app-secrets
+        key: MONGO_ROOT_PASSWORD
+  - name: MONGO_URI
+    value: mongodb://$(MONGO_ROOT_USERNAME):$(MONGO_ROOT_PASSWORD)@mongo:27017/?authSource=admin
+  - name: RABBITMQ_USER
+    valueFrom:
+      secretKeyRef:
+        name: app-secrets
+        key: RABBITMQ_USER
+  - name: RABBITMQ_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: app-secrets
+        key: RABBITMQ_PASSWORD
+  - name: RABBITMQ_URL
+    value: amqp://$(RABBITMQ_USER):$(RABBITMQ_PASSWORD)@rabbitmq:5672/
+
+# /health aggregator gagal bila Mongo mati; restart tidak membantu, jadi liveness cukup cek port
+livenessProbe:
+  httpGet: null
+  tcpSocket: { port: http }
+  initialDelaySeconds: 5
+  periodSeconds: 10

@@ -33,6 +33,10 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
+          {{- with .Values.extraEnv }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           {{- if or .Values.env .Values.secretRefs }}
           envFrom:
             {{- if .Values.env }}

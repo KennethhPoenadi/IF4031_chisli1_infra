@@ -3,7 +3,9 @@ image:
   # wajib diisi saat deploy (--set image.tag=<service>-<commit sha>), tidak ada default agar tidak jatuh ke :latest
   tag: ""
   pullPolicy: IfNotPresent
-imagePullSecrets: []
+# dibuat create-secrets.sh; tidak masalah bila image publik
+imagePullSecrets:
+  - name: gitlab-registry
 
 replicaCount: 1
 
@@ -12,6 +14,8 @@ service:
 
 env: {}
 secretRefs: []
+# Env mentah Kubernetes (secretKeyRef, $(VAR) untuk merakit URL). Ditulis sebelum envFrom.
+extraEnv: []
 
 resources:
   requests: { cpu: 50m, memory: 64Mi }
@@ -49,6 +53,6 @@ autoscaling:
 
 ingress:
   enabled: false
-  className: nginx
+  className: traefik
   host: ""
   path: /

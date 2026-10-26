@@ -1,5 +1,3 @@
-# Semua job berjalan di runner self-hosted (tag k8s-local)
-# yang berada di mesin yang sama dengan cluster kind.
 stages: [validate, mirror, cluster, platform, policies, deploy-dev, deploy-prod]
 
 default:
@@ -8,9 +6,7 @@ default:
     - source scripts/env.sh
 
 variables:
-  # Ubah ke "true" setelah chart ada, supaya deploy yang tidak punya chart gagal (bukan di-skip).
   REQUIRE_CHART: "false"
-  # Samakan versinya dengan docker-compose.yml di repo app.
   MIRROR_IMAGES: "mongo:7 rabbitmq:3-management"
 
 validate:
