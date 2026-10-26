@@ -1,0 +1,57 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: xops
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - matrix:
+        generators:
+          - list:
+              elements:
+                - env: dev
+                - env: prod
+          - list:
+              elements:
+                - svc: mongo
+                - svc: rabbitmq
+                - svc: auth-service
+                - svc: bmkg-mock
+                - svc: pvmbg-mock
+                - svc: aggregator
+                - svc: client-facing-api
+                - svc: notifier
+                - svc: dashboard-updater
+  template:
+    metadata:
+      name: '{{.svc}}-{{.env}}'
+    spec:
+      project: default
+      source:
+        repoURL: __REPO_URL__
+        targetRevision: main
+        path: charts/microservice
+        helm:
+          releaseName: '{{.svc}}'
+          ignoreMissingValueFiles: true
+          valueFiles:
+            - '../../envs/{{.env}}/{{.svc}}.yaml'
+            - '../../envs/{{.env}}/tags/{{.svc}}.yaml'
+          parameters:
+            - name: image.repository
+              value: __IMAGE_REPO__
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{.env}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        retry:
+          limit: 5
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m

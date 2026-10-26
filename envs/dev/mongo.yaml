@@ -43,15 +43,11 @@ extraEnv:
 
 livenessProbe:
   httpGet: null
-  exec:
-    command: [mongosh, --quiet, --eval, "db.adminCommand('ping').ok"]
+  tcpSocket: { port: http }
   initialDelaySeconds: 30
-  periodSeconds: 15
-  timeoutSeconds: 10
+  periodSeconds: 20
 readinessProbe:
   httpGet: null
-  exec:
-    command: [mongosh, --quiet, --eval, "db.adminCommand('ping').ok"]
+  tcpSocket: { port: http }
   initialDelaySeconds: 15
-  periodSeconds: 10
-  timeoutSeconds: 10
+  periodSeconds: 15

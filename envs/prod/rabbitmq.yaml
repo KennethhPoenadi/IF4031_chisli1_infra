@@ -34,15 +34,11 @@ extraEnv:
 
 livenessProbe:
   httpGet: null
-  exec:
-    command: [rabbitmq-diagnostics, -q, ping]
+  tcpSocket: { port: http }
   initialDelaySeconds: 30
-  periodSeconds: 15
-  timeoutSeconds: 10
+  periodSeconds: 20
 readinessProbe:
   httpGet: null
-  exec:
-    command: [rabbitmq-diagnostics, -q, check_port_connectivity]
-  initialDelaySeconds: 20
-  periodSeconds: 10
-  timeoutSeconds: 10
+  tcpSocket: { port: http }
+  initialDelaySeconds: 15
+  periodSeconds: 15

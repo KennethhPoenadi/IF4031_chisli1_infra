@@ -1,0 +1,14 @@
+configs:
+  params:
+    server.insecure: true
+  cm:
+    application.resourceTrackingMethod: annotation
+    resource.customizations.health.networking.k8s.io_Ingress: |
+      hs = {}
+      hs.status = "Healthy"
+      hs.message = "Ingress dilayani Traefik hostPort tanpa load balancer"
+      return hs
+dex:
+  enabled: false
+notifications:
+  enabled: false

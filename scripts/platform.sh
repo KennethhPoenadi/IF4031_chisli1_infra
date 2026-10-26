@@ -3,7 +3,7 @@ cd "$(dirname "$0")/.."
 source scripts/env.sh
 source platform/versions.env
 
-for v in TRAEFIK_VERSION METRICS_SERVER_VERSION KYVERNO_VERSION; do
+for v in TRAEFIK_VERSION METRICS_SERVER_VERSION KYVERNO_VERSION ARGOCD_VERSION; do
   if [ -z "${!v:-}" ]; then
     echo "ERROR: $v kosong. Jalankan ./scripts/pin-versions.sh lalu commit platform/versions.env" >&2
     exit 1
@@ -15,6 +15,7 @@ kubectl cluster-info >/dev/null
 helm repo add traefik        https://traefik.github.io/charts --force-update >/dev/null
 helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/ --force-update >/dev/null
 helm repo add kyverno        https://kyverno.github.io/kyverno/ --force-update >/dev/null
+helm repo add argo           https://argoproj.github.io/argo-helm --force-update >/dev/null
 helm repo update >/dev/null
 
 echo "==> Traefik $TRAEFIK_VERSION"
@@ -32,6 +33,11 @@ helm upgrade --install kyverno kyverno/kyverno \
   -n kyverno --create-namespace --version "$KYVERNO_VERSION" \
   --wait --timeout 8m
 kubectl wait --for=condition=Available deployment --all -n kyverno --timeout=300s
+
+echo "==> Argo CD $ARGOCD_VERSION"
+helm upgrade --install argocd argo/argo-cd \
+  -n argocd --create-namespace --version "$ARGOCD_VERSION" \
+  -f platform/argocd-values.yaml --wait --timeout 8m
 
 echo "==> Namespace dev & prod"
 for ns in dev prod; do

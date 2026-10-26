@@ -1,4 +1,4 @@
-stages: [validate, mirror, cluster, platform, policies, deploy-dev, deploy-prod]
+stages: [validate, mirror, cluster, platform, policies, bootstrap, release]
 
 default:
   tags: [k8s-local]
@@ -10,6 +10,9 @@ variables:
   MIRROR_IMAGES: "mongo:7 rabbitmq:3-management"
   MIRROR_REPO: "docker.io/$DOCKERHUB_USERNAME/if4054-2026-t1-13523008-13523029-13523040"
 
+.platform_rules: &platform_rules
+  - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE != "pipeline"
+
 validate:
   stage: validate
   script:
@@ -20,7 +23,7 @@ mirror-images:
   script:
     - ./scripts/mirror-images.sh $MIRROR_IMAGES
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE != "pipeline"
       when: manual
       allow_failure: true
 
@@ -29,16 +32,14 @@ cluster:
   resource_group: xops-cluster
   script:
     - ./scripts/cluster-up.sh
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE != "pipeline"
+  rules: *platform_rules
 
 platform:
   stage: platform
   resource_group: xops-cluster
   script:
     - ./scripts/platform.sh
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE != "pipeline"
+  rules: *platform_rules
 
 policies:
   stage: policies
@@ -50,23 +51,28 @@ policies:
       else
         echo "WARN: belum ada policy di policies/kyverno"
       fi
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+  rules: *platform_rules
 
-deploy-dev:
-  stage: deploy-dev
+bootstrap-argocd:
+  stage: bootstrap
   resource_group: xops-cluster
+  script:
+    - ./scripts/bootstrap-argocd.sh
+  rules: *platform_rules
+
+release-dev:
+  stage: release
+  resource_group: xops-release
   environment:
     name: dev
   script:
-    - ./scripts/deploy.sh dev
+    - ./scripts/set-tags.sh dev "$IMAGE_TAG"
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-      changes: [envs/dev/**/*, charts/**/*, scripts/**/*]
+    - if: $CI_COMMIT_BRANCH == "main" && ($CI_PIPELINE_SOURCE == "pipeline" || $CI_PIPELINE_SOURCE == "web") && $IMAGE_TAG
 
-deploy-prod:
-  stage: deploy-prod
-  resource_group: xops-cluster
+release-prod:
+  stage: release
+  resource_group: xops-release
   environment:
     name: prod
   script:
@@ -77,9 +83,8 @@ deploy-prod:
       if [ "$GITLAB_USER_LOGIN" != "$PROD_APPROVER" ]; then
         echo "ERROR: hanya $PROD_APPROVER yang boleh menyetujui deploy ke prod"; exit 1
       fi
-    - ./scripts/deploy.sh prod
+    - ./scripts/set-tags.sh prod
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
-      changes: [envs/prod/**/*, charts/**/*, scripts/**/*]
       when: manual
-      allow_failure: false
+      allow_failure: true
