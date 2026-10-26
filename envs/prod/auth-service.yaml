@@ -1,7 +1,3 @@
-image:
-  # TODO: ganti <dockerhub-user>; tag diisi deploy.sh (--set image.tag=auth-service-<sha>)
-  repository: <dockerhub-user>/if4054-2026-t1-13523008-13523029-13523040
-
 service:
   port: 8091
 

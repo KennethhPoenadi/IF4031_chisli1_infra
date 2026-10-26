@@ -18,6 +18,9 @@ ENV_NAME="${1:?usage: deploy.sh <dev|prod>}"
 SHA="${IMAGE_TAG:-}"
 SELECTED="${DEPLOY_SERVICES:-}"
 CHART=charts/microservice
+# Repo image = satu repo Docker Hub untuk semua (app + mirror mongo/rabbitmq); username dari CI variable
+APP_IMAGE_NAME="${APP_IMAGE_NAME:-if4054-2026-t1-13523008-13523029-13523040}"
+IMAGE_REPO="${IMAGE_REPO:-${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME belum diisi}/$APP_IMAGE_NAME}"
 
 ./scripts/create-secrets.sh "$ENV_NAME"
 
@@ -59,7 +62,7 @@ deploy() {
     return 0
   fi
   echo "==> helm $svc ($ENV_NAME)"
-  helm upgrade --install "$svc" "$CHART" -n "$ENV_NAME" -f "$values" "$@" \
+  helm upgrade --install "$svc" "$CHART" -n "$ENV_NAME" -f "$values" --set image.repository="$IMAGE_REPO" "$@" \
     --atomic --wait --timeout 5m
 }
 
