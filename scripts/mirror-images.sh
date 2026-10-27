@@ -35,6 +35,10 @@ for img in "$@"; do
   else
     dest="$BASE/$name:$tag"
   fi
+  if docker manifest inspect "$dest" >/dev/null 2>&1; then
+    echo "SKIP $dest sudah ada"
+    continue
+  fi
   docker pull "$img"
   docker tag "$img" "$dest"
   docker push "$dest"

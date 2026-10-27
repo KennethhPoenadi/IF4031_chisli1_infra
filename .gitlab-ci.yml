@@ -22,10 +22,8 @@ mirror-images:
   stage: mirror
   script:
     - ./scripts/mirror-images.sh $MIRROR_IMAGES
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE != "pipeline"
-      when: manual
-      allow_failure: true
+  allow_failure: true
+  rules: *platform_rules
 
 cluster:
   stage: cluster
