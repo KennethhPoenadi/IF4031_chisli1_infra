@@ -17,6 +17,7 @@ else
   echo "ERROR: set MIRROR_REPO atau MIRROR_PREFIX (mis. docker.io/<namespace>)" >&2
   exit 1
 fi
+BASE="$(printf '%s' "$BASE" | tr '[:upper:]' '[:lower:]')"
 HOST="${MIRROR_REGISTRY:-${BASE%%/*}}"
 
 if [ -n "$REGISTRY_USER" ] && [ -n "$REGISTRY_PASS" ]; then

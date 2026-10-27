@@ -9,6 +9,7 @@ if [ -z "$REPO_URL" ]; then
 fi
 APP_IMAGE_NAME="${APP_IMAGE_NAME:-if4054-2026-t1-13523008-13523029-13523040}"
 IMAGE_REPO="${IMAGE_REPO:-${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME belum diisi}/$APP_IMAGE_NAME}"
+IMAGE_REPO="$(printf '%s' "$IMAGE_REPO" | tr '[:upper:]' '[:lower:]')"
 
 if [ -n "${GITOPS_TOKEN:-}" ]; then
   kubectl -n argocd create secret generic gitops-repo \
