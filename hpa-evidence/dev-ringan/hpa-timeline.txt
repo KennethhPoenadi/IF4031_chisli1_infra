@@ -1,0 +1,59 @@
+== 12:05:32
+client-facing-api   Deployment/client-facing-api   cpu: 11%/60%   2     3     2     22m
+client-facing-api-8569c56747-rj6nc   5m    26Mi   
+client-facing-api-8569c56747-sz6wr   6m    33Mi   
+== 12:05:43
+client-facing-api   Deployment/client-facing-api   cpu: 12%/60%   2     3     2     22m
+client-facing-api-8569c56747-rj6nc   6m    26Mi   
+client-facing-api-8569c56747-sz6wr   6m    33Mi   
+== 12:05:53
+client-facing-api   Deployment/client-facing-api   cpu: 12%/60%   2     3     2     22m
+client-facing-api-8569c56747-rj6nc   20m   29Mi   
+client-facing-api-8569c56747-sz6wr   6m    33Mi   
+== 12:06:03
+client-facing-api   Deployment/client-facing-api   cpu: 26%/60%   2     3     2     22m
+client-facing-api-8569c56747-rj6nc   20m   29Mi   
+client-facing-api-8569c56747-sz6wr   6m    33Mi   
+== 12:06:13
+client-facing-api   Deployment/client-facing-api   cpu: 37%/60%   2     3     2     23m
+client-facing-api-8569c56747-rj6nc   18m   29Mi   
+client-facing-api-8569c56747-sz6wr   19m   37Mi   
+== 12:06:24
+client-facing-api   Deployment/client-facing-api   cpu: 37%/60%   2     3     2     23m
+client-facing-api-8569c56747-rj6nc   34m   32Mi   
+== 12:06:34
+client-facing-api   Deployment/client-facing-api   cpu: 68%/60%   2     3     2     23m
+client-facing-api-8569c56747-rj6nc   61m   35Mi   
+client-facing-api-8569c56747-sz6wr   53m   26Mi   
+== 12:06:44
+client-facing-api   Deployment/client-facing-api   cpu: 114%/60%   2     3     2     23m
+client-facing-api-8569c56747-rj6nc   61m   35Mi   
+client-facing-api-8569c56747-sz6wr   53m   26Mi   
+== 12:06:54
+client-facing-api   Deployment/client-facing-api   cpu: 114%/60%   2     3     2     23m
+client-facing-api-8569c56747-rj6nc   60m   36Mi   
+client-facing-api-8569c56747-sz6wr   80m   32Mi   
+== 12:07:04
+client-facing-api   Deployment/client-facing-api   cpu: 140%/60%   2     3     3     23m
+client-facing-api-8569c56747-dq7w6   58m   31Mi   
+client-facing-api-8569c56747-sz6wr   58m   34Mi   
+== 12:07:15
+client-facing-api   Deployment/client-facing-api   cpu: 116%/60%   2     3     3     24m
+client-facing-api-8569c56747-dq7w6   58m   31Mi   
+client-facing-api-8569c56747-sz6wr   58m   34Mi   
+== 12:07:25
+client-facing-api   Deployment/client-facing-api   cpu: 116%/60%   2     3     3     24m
+client-facing-api-8569c56747-dq7w6   71m   34Mi   
+client-facing-api-8569c56747-sz6wr   58m   34Mi   
+== 12:07:35
+client-facing-api   Deployment/client-facing-api   cpu: 129%/60%   2     3     3     24m
+client-facing-api-8569c56747-dq7w6   62m   35Mi   
+client-facing-api-8569c56747-rj6nc   60m   32Mi   
+== 12:07:46
+client-facing-api   Deployment/client-facing-api   cpu: 122%/60%   2     3     3     24m
+client-facing-api-8569c56747-dq7w6   62m   35Mi   
+client-facing-api-8569c56747-rj6nc   60m   32Mi   
+== 12:07:56
+client-facing-api   Deployment/client-facing-api   cpu: 122%/60%   2     3     3     24m
+client-facing-api-8569c56747-dq7w6   59m   35Mi   
+client-facing-api-8569c56747-rj6nc   60m   32Mi   

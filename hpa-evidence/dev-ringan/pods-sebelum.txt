@@ -1,0 +1,17 @@
+NAME                                 READY   STATUS    RESTARTS        AGE
+aggregator-7f8bfb65bf-m9w6j          1/1     Running   6 (6m34s ago)   21m
+aggregator-7f8bfb65bf-xvk5r          1/1     Running   3 (5m59s ago)   16m
+auth-service-bc5b7f99f-b8cdg         1/1     Running   2 (6m34s ago)   22m
+auth-service-bc5b7f99f-hxp2k         1/1     Running   2 (6m34s ago)   22m
+bmkg-mock-844bbd9d74-7b5d4           1/1     Running   1 (6m34s ago)   22m
+bmkg-mock-844bbd9d74-vxpd8           1/1     Running   2 (6m34s ago)   22m
+client-facing-api-8569c56747-rj6nc   1/1     Running   7 (6m34s ago)   22m
+client-facing-api-8569c56747-sz6wr   1/1     Running   6 (6m34s ago)   18m
+dashboard-updater-6c7cdd45f7-5d7l2   1/1     Running   2 (6m1s ago)    21m
+dashboard-updater-6c7cdd45f7-sdn8w   1/1     Running   1 (6m34s ago)   21m
+mongo-0                              1/1     Running   1 (6m34s ago)   40m
+notifier-86788976ff-7j6v5            1/1     Running   2 (6m34s ago)   21m
+notifier-86788976ff-xqs2t            1/1     Running   3 (5m58s ago)   21m
+pvmbg-mock-57688c959b-s8xdv          1/1     Running   1 (6m34s ago)   21m
+pvmbg-mock-57688c959b-sjjks          1/1     Running   1 (6m34s ago)   21m
+rabbitmq-0                           1/1     Running   1 (6m34s ago)   40m
