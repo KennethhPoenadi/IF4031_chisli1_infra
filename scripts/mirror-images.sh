@@ -42,6 +42,6 @@ for img in "$@"; do
   fi
   docker pull "$img"
   docker tag "$img" "$dest"
-  docker push "$dest"
+  docker push --quiet "$dest"
   echo "OK -> $dest"
 done
