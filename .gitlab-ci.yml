@@ -1,4 +1,4 @@
-stages: [validate, mirror, cluster, platform, policies, bootstrap, release]
+stages: [validate, mirror, cluster, platform, policies, secrets, bootstrap, release]
 
 default:
   tags: [k8s-local]
@@ -51,6 +51,26 @@ policies:
       else
         echo "WARN: belum ada policy di policies/kyverno"
       fi
+  rules: *platform_rules
+
+secrets-dev:
+  stage: secrets
+  resource_group: xops-cluster
+  environment:
+    name: dev
+    action: access
+  script:
+    - ./scripts/create-secrets.sh dev
+  rules: *platform_rules
+
+secrets-prod:
+  stage: secrets
+  resource_group: xops-cluster
+  environment:
+    name: prod
+    action: access
+  script:
+    - ./scripts/create-secrets.sh prod
   rules: *platform_rules
 
 bootstrap-argocd:
