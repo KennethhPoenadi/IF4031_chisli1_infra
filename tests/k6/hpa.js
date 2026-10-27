@@ -5,8 +5,12 @@ const API = __ENV.API_URL || 'http://api.dev.localtest.me';
 const AUTH = __ENV.AUTH_URL || 'http://auth.dev.localtest.me';
 const PEAK = parseInt(__ENV.PEAK_VUS || '150');
 const HOLD = __ENV.HOLD || '4m';
+const TARGET_IP = __ENV.TARGET_IP || '127.0.0.1';
+
+const hostOf = (url) => url.replace(/^https?:\/\//, '').split(/[/:]/)[0];
 
 export const options = {
+  hosts: { [hostOf(API)]: TARGET_IP, [hostOf(AUTH)]: TARGET_IP },
   stages: [
     { duration: '30s', target: Math.ceil(PEAK / 4) },
     { duration: '30s', target: PEAK },

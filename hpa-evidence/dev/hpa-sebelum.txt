@@ -1,0 +1,8 @@
+NAME                REFERENCE                      TARGETS       MINPODS   MAXPODS   REPLICAS   AGE
+aggregator          Deployment/aggregator          cpu: 6%/60%   2         3         2          7h
+auth-service        Deployment/auth-service        cpu: 4%/60%   2         3         2          7h1m
+bmkg-mock           Deployment/bmkg-mock           cpu: 4%/60%   2         3         2          7h1m
+client-facing-api   Deployment/client-facing-api   cpu: 6%/60%   2         3         2          7h1m
+dashboard-updater   Deployment/dashboard-updater   cpu: 5%/60%   2         3         2          7h
+notifier            Deployment/notifier            cpu: 4%/60%   2         3         2          7h
+pvmbg-mock          Deployment/pvmbg-mock          cpu: 4%/60%   2         3         2          7h

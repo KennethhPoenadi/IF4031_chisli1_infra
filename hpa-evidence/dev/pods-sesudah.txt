@@ -1,0 +1,4 @@
+NAME                                 READY   STATUS    RESTARTS        AGE
+client-facing-api-587c559df4-2hjgv   1/1     Running   3 (3h51m ago)   5h35m
+client-facing-api-587c559df4-4jhdr   1/1     Running   1 (3h53m ago)   5h35m
+client-facing-api-587c559df4-wqhhv   1/1     Running   0               4m24s

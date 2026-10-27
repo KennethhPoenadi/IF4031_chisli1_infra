@@ -1,0 +1,81 @@
+== 18:44:56
+client-facing-api   Deployment/client-facing-api   cpu: 6%/60%   2     3     2     7h1m
+client-facing-api-587c559df4-2hjgv   4m    5Mi   
+client-facing-api-587c559df4-4jhdr   3m    5Mi   
+== 18:45:06
+client-facing-api   Deployment/client-facing-api   cpu: 7%/60%   2     3     2     7h1m
+client-facing-api-587c559df4-2hjgv   21m   7Mi   
+client-facing-api-587c559df4-4jhdr   63m   7Mi   
+== 18:45:22
+client-facing-api   Deployment/client-facing-api   cpu: 84%/60%   2     3     2     7h2m
+client-facing-api-587c559df4-2hjgv   157m   8Mi   
+client-facing-api-587c559df4-4jhdr   149m   8Mi   
+== 18:45:34
+client-facing-api   Deployment/client-facing-api   cpu: 84%/60%   2     3     2     7h2m
+client-facing-api-587c559df4-2hjgv   157m   8Mi   
+client-facing-api-587c559df4-4jhdr   149m   8Mi   
+== 18:45:45
+client-facing-api   Deployment/client-facing-api   cpu: 211%/60%   2     3     3     7h2m
+client-facing-api-587c559df4-2hjgv   103m   8Mi   
+client-facing-api-587c559df4-4jhdr   108m   9Mi   
+== 18:45:58
+client-facing-api   Deployment/client-facing-api   cpu: 152%/60%   2     3     3     7h2m
+client-facing-api-587c559df4-2hjgv   89m   8Mi   
+client-facing-api-587c559df4-4jhdr   63m   8Mi   
+client-facing-api-587c559df4-wqhhv   8m    2Mi   
+== 18:46:10
+client-facing-api   Deployment/client-facing-api   cpu: 152%/60%   2     3     3     7h2m
+client-facing-api-587c559df4-2hjgv   45m   8Mi   
+client-facing-api-587c559df4-4jhdr   36m   8Mi   
+client-facing-api-587c559df4-wqhhv   8m    2Mi   
+== 18:46:23
+client-facing-api   Deployment/client-facing-api   cpu: 59%/60%   2     3     3     7h3m
+client-facing-api-587c559df4-2hjgv   76m   12Mi   
+client-facing-api-587c559df4-4jhdr   81m   9Mi    
+client-facing-api-587c559df4-wqhhv   71m   8Mi    
+== 18:46:34
+client-facing-api   Deployment/client-facing-api   cpu: 152%/60%   2     3     3     7h3m
+client-facing-api-587c559df4-2hjgv   76m   12Mi   
+client-facing-api-587c559df4-4jhdr   81m   9Mi    
+client-facing-api-587c559df4-wqhhv   71m   8Mi    
+== 18:46:45
+client-facing-api   Deployment/client-facing-api   cpu: 216%/60%   2     3     3     7h3m
+client-facing-api-587c559df4-2hjgv   105m   10Mi   
+client-facing-api-587c559df4-4jhdr   116m   9Mi    
+client-facing-api-587c559df4-wqhhv   103m   9Mi    
+== 18:46:56
+client-facing-api   Deployment/client-facing-api   cpu: 216%/60%   2     3     3     7h3m
+client-facing-api-587c559df4-2hjgv   108m   10Mi   
+client-facing-api-587c559df4-4jhdr   114m   9Mi    
+client-facing-api-587c559df4-wqhhv   96m    11Mi   
+== 18:47:13
+client-facing-api   Deployment/client-facing-api   cpu: 212%/60%   2     3     3     7h4m
+client-facing-api-587c559df4-2hjgv   78m   9Mi   
+client-facing-api-587c559df4-4jhdr   88m   9Mi   
+client-facing-api-587c559df4-wqhhv   60m   9Mi   
+== 18:47:33
+client-facing-api   Deployment/client-facing-api   cpu: 20%/60%   2     3     3     7h4m
+client-facing-api-587c559df4-2hjgv   9m    9Mi   
+client-facing-api-587c559df4-4jhdr   11m   9Mi   
+client-facing-api-587c559df4-wqhhv   10m   9Mi   
+== 18:47:46
+client-facing-api   Deployment/client-facing-api   cpu: 18%/60%   2     3     3     7h4m
+client-facing-api-587c559df4-2hjgv   8m    8Mi   
+client-facing-api-587c559df4-4jhdr   11m   9Mi   
+client-facing-api-587c559df4-wqhhv   9m    8Mi   
+== 18:47:58
+client-facing-api   Deployment/client-facing-api   cpu: 13%/60%   2     3     3     7h4m
+client-facing-api-587c559df4-2hjgv   8m    8Mi   
+client-facing-api-587c559df4-4jhdr   7m    9Mi   
+client-facing-api-587c559df4-wqhhv   5m    8Mi   
+== 18:48:12
+client-facing-api   Deployment/client-facing-api   cpu: 18%/60%   2     3     3     7h5m
+client-facing-api-587c559df4-2hjgv   9m    8Mi   
+client-facing-api-587c559df4-4jhdr   11m   9Mi   
+client-facing-api-587c559df4-wqhhv   8m    8Mi   
+== 18:48:30
+client-facing-api   Deployment/client-facing-api   cpu: 18%/60%   2     3     3     7h5m
+== 18:49:28
+client-facing-api   Deployment/client-facing-api   cpu: 18%/60%   2     3     3     7h6m
+client-facing-api-587c559df4-2hjgv   11m   7Mi   
+client-facing-api-587c559df4-wqhhv   6m    8Mi   

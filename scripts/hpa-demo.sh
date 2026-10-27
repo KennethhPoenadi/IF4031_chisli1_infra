@@ -26,7 +26,7 @@ kubectl get pods -n "$NS" > "$OUT/pods-sebelum.txt"
 WATCH=$!
 trap 'kill $WATCH 2>/dev/null || true' EXIT
 
-k6 run tests/k6/hpa.js | tee "$OUT/k6-ringkasan.txt"
+k6 run tests/k6/hpa.js | tee "$OUT/k6-ringkasan.txt" || echo "k6 selesai dengan threshold terlewati (cek ringkasan)"
 
 sleep 15
 kill $WATCH 2>/dev/null || true
