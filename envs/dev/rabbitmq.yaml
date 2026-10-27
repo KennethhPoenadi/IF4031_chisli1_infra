@@ -42,3 +42,8 @@ readinessProbe:
   tcpSocket: { port: http }
   initialDelaySeconds: 15
   periodSeconds: 15
+networkPolicy:
+  from: [aggregator, notifier, dashboard-updater]
+  to: []
+pdb:
+  enabled: false

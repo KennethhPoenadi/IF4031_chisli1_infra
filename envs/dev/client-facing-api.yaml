@@ -18,3 +18,7 @@ env:
   CLIENT_API_REVOCATION_POLL_MS: "1000"
 
 secretRefs: [app-secrets]
+networkPolicy:
+  ingressController: true
+  from: []
+  to: [aggregator, auth-service]

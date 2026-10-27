@@ -12,3 +12,7 @@ env:
   AUTH_TOKEN_ISSUER: bnpb-auth
 
 secretRefs: [app-secrets]
+networkPolicy:
+  ingressController: true
+  from: [client-facing-api]
+  to: []

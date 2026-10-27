@@ -21,6 +21,16 @@ metadata:
   annotations:
     checksum/config: {{ toYaml .Values.env | sha256sum }}
 spec:
+  automountServiceAccountToken: {{ .Values.automountServiceAccountToken }}
+  {{- if .Values.topologySpread.enabled }}
+  topologySpreadConstraints:
+    - maxSkew: {{ .Values.topologySpread.maxSkew }}
+      topologyKey: {{ .Values.topologySpread.topologyKey }}
+      whenUnsatisfiable: {{ .Values.topologySpread.whenUnsatisfiable }}
+      labelSelector:
+        matchLabels:
+          {{- include "microservice.selectorLabels" . | nindent 10 }}
+  {{- end }}
   {{- with .Values.imagePullSecrets }}
   imagePullSecrets:
     {{- toYaml . | nindent 4 }}

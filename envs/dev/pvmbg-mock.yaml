@@ -10,3 +10,6 @@ env:
   PVMBG_RANDOM_SEED: "4031"
 
 secretRefs: [app-secrets]
+networkPolicy:
+  from: [aggregator]
+  to: []

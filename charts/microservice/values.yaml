@@ -9,6 +9,22 @@ kind: Deployment
 
 replicaCount: 1
 
+automountServiceAccountToken: false
+
+strategy:
+  maxSurge: 1
+  maxUnavailable: 0
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+topologySpread:
+  enabled: true
+  maxSkew: 1
+  topologyKey: kubernetes.io/hostname
+  whenUnsatisfiable: ScheduleAnyway
+
 service:
   port: 8080
 
@@ -64,3 +80,10 @@ persistence:
   size: 1Gi
   mountPath: ""
   storageClass: ""
+
+networkPolicy:
+  enabled: true
+  ingressNamespace: traefik
+  ingressController: false
+  from: []
+  to: []
