@@ -1,4 +1,4 @@
-stages: [validate, mirror, cluster, platform, policies, secrets, bootstrap, release]
+stages: [validate, mirror, cluster, platform, policies, secrets, bootstrap, release, promote]
 
 default:
   tags: [k8s-local]
@@ -91,7 +91,7 @@ release-dev:
     - if: $CI_COMMIT_BRANCH == "main" && ($CI_PIPELINE_SOURCE == "pipeline" || $CI_PIPELINE_SOURCE == "web") && $IMAGE_TAG
 
 release-prod:
-  stage: release
+  stage: promote
   resource_group: xops-release
   environment:
     name: prod
@@ -105,6 +105,6 @@ release-prod:
       fi
     - ./scripts/set-tags.sh prod
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "main" && ($CI_PIPELINE_SOURCE == "pipeline" || $CI_PIPELINE_SOURCE == "web")
       when: manual
       allow_failure: true

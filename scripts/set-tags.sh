@@ -5,6 +5,17 @@ ENV_NAME="${1:?usage: set-tags.sh <dev|prod> [sha]}"
 SHA="${2:-}"
 APP_SERVICES=(auth-service bmkg-mock pvmbg-mock aggregator client-facing-api notifier dashboard-updater)
 
+PUSH_URL="${GITOPS_PUSH_URL:-}"
+if [ -z "$PUSH_URL" ]; then
+  base="${CI_PROJECT_URL:?CI_PROJECT_URL kosong}"
+  PUSH_URL="${base/https:\/\//https://oauth2:${GITOPS_TOKEN:?GITOPS_TOKEN belum diisi}@}.git"
+fi
+
+if [ -n "${CI:-}" ]; then
+  git fetch "$PUSH_URL" main
+  git reset --hard FETCH_HEAD
+fi
+
 mkdir -p "envs/$ENV_NAME/tags"
 for s in "${APP_SERVICES[@]}"; do
   if [ "$ENV_NAME" = "dev" ]; then
@@ -24,11 +35,6 @@ if git diff --cached --quiet; then echo "Tag sudah terbaru, tidak ada perubahan"
 git -c user.name="${GITLAB_USER_NAME:-xops-ci}" -c user.email="${GITLAB_USER_EMAIL:-ci@xops.local}" \
   commit -m "chore($ENV_NAME): set image tags ${SHA:-from dev} [skip ci]"
 
-PUSH_URL="${GITOPS_PUSH_URL:-}"
-if [ -z "$PUSH_URL" ]; then
-  base="${CI_PROJECT_URL:?CI_PROJECT_URL kosong}"
-  PUSH_URL="${base/https:\/\//https://oauth2:${GITOPS_TOKEN:?GITOPS_TOKEN belum diisi}@}.git"
-fi
 git fetch "$PUSH_URL" main
 git rebase FETCH_HEAD
 git push "$PUSH_URL" HEAD:main
