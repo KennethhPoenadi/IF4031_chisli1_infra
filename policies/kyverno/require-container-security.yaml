@@ -1,0 +1,63 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-container-security
+  annotations:
+    policies.kyverno.io/title: Require Container Security Controls
+spec:
+  background: true
+  rules:
+    - name: require-run-as-non-root
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [dev, prod]
+      validate:
+        failureAction: Enforce
+        message: Every container must set runAsNonRoot to true.
+        foreach:
+          - list: request.object.spec.containers
+            pattern:
+              securityContext:
+                runAsNonRoot: true
+          - list: request.object.spec.initContainers || `[]`
+            pattern:
+              securityContext:
+                runAsNonRoot: true
+    - name: require-read-only-root-filesystem
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [dev, prod]
+      validate:
+        failureAction: Enforce
+        message: Every container must set readOnlyRootFilesystem to true.
+        foreach:
+          - list: request.object.spec.containers
+            pattern:
+              securityContext:
+                readOnlyRootFilesystem: true
+          - list: request.object.spec.initContainers || `[]`
+            pattern:
+              securityContext:
+                readOnlyRootFilesystem: true
+    - name: disallow-privilege-escalation
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [dev, prod]
+      validate:
+        failureAction: Enforce
+        message: Every container must set allowPrivilegeEscalation to false.
+        foreach:
+          - list: request.object.spec.containers
+            pattern:
+              securityContext:
+                allowPrivilegeEscalation: false
+          - list: request.object.spec.initContainers || `[]`
+            pattern:
+              securityContext:
+                allowPrivilegeEscalation: false

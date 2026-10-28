@@ -1,0 +1,145 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: xops-deployment-guardrails
+policies:
+  - ../kyverno/restrict-image-repositories.yaml
+  - ../kyverno/require-container-security.yaml
+  - ../kyverno/require-resource-limits.yaml
+  - ../kyverno/require-health-probes.yaml
+  - ../kyverno/require-minimum-replicas.yaml
+  - ../kyverno/disallow-latest-tag.yaml
+resources:
+  - resources.yaml
+  - deployment-violations.yaml
+results:
+  - policy: restrict-image-repositories
+    rule: require-group-image-repository
+    resources: [compliant-pod]
+    kind: Pod
+    result: pass
+  - policy: restrict-image-repositories
+    rule: require-group-image-repository
+    resources: [bad-image-repository]
+    kind: Pod
+    result: fail
+  - policy: require-container-security
+    rule: require-run-as-non-root
+    resources: [compliant-pod]
+    kind: Pod
+    result: pass
+  - policy: require-container-security
+    rule: require-read-only-root-filesystem
+    resources: [compliant-pod]
+    kind: Pod
+    result: pass
+  - policy: require-container-security
+    rule: disallow-privilege-escalation
+    resources: [compliant-pod]
+    kind: Pod
+    result: pass
+  - policy: require-container-security
+    rule: require-run-as-non-root
+    resources: [bad-run-as-root]
+    kind: Pod
+    result: fail
+  - policy: require-container-security
+    rule: require-read-only-root-filesystem
+    resources: [bad-writable-rootfs]
+    kind: Pod
+    result: fail
+  - policy: require-container-security
+    rule: disallow-privilege-escalation
+    resources: [bad-privilege-escalation]
+    kind: Pod
+    result: fail
+  - policy: require-resource-limits
+    rule: require-cpu-and-memory-limits
+    resources: [bad-no-memory-limit]
+    kind: Pod
+    result: fail
+  - policy: require-resource-limits
+    rule: require-cpu-and-memory-limits
+    resources: [compliant-pod]
+    kind: Pod
+    result: pass
+  - policy: require-health-probes
+    rule: require-liveness-and-readiness-probes
+    resources: [bad-no-readiness-probe]
+    kind: Pod
+    result: fail
+  - policy: require-health-probes
+    rule: require-liveness-and-readiness-probes
+    resources: [compliant-pod]
+    kind: Pod
+    result: pass
+  - policy: disallow-latest-tag
+    rule: require-versioned-image-tag
+    resources: [bad-latest-tag]
+    kind: Pod
+    result: fail
+  - policy: disallow-latest-tag
+    rule: require-versioned-image-tag
+    resources: [compliant-pod]
+    kind: Pod
+    result: pass
+  - policy: require-minimum-replicas
+    rule: require-controller-minimum-replicas
+    resources: [bad-zero-replicas]
+    kind: Deployment
+    result: fail
+  - policy: require-minimum-replicas
+    rule: require-controller-minimum-replicas
+    resources: [compliant-deployment]
+    kind: Deployment
+    result: pass
+  - policy: require-minimum-replicas
+    rule: require-hpa-minimum-replicas
+    resources: [bad-hpa-min-replicas]
+    kind: HorizontalPodAutoscaler
+    result: fail
+  - policy: require-minimum-replicas
+    rule: require-hpa-minimum-replicas
+    resources: [compliant-hpa]
+    kind: HorizontalPodAutoscaler
+    result: pass
+  - policy: require-container-security
+    rule: autogen-require-run-as-non-root
+    resources: [compliant-deployment]
+    kind: Deployment
+    result: pass
+  - policy: require-container-security
+    rule: autogen-require-run-as-non-root
+    resources: [bad-deployment-security]
+    kind: Deployment
+    result: fail
+  - policy: restrict-image-repositories
+    rule: autogen-require-group-image-repository
+    resources: [violation-image]
+    kind: Deployment
+    result: fail
+  - policy: require-container-security
+    rule: autogen-require-read-only-root-filesystem
+    resources: [violation-rootfs]
+    kind: Deployment
+    result: fail
+  - policy: require-container-security
+    rule: autogen-disallow-privilege-escalation
+    resources: [violation-escalation]
+    kind: Deployment
+    result: fail
+  - policy: require-resource-limits
+    rule: autogen-require-cpu-and-memory-limits
+    resources: [violation-limits]
+    kind: Deployment
+    result: fail
+  - policy: require-health-probes
+    rule: autogen-require-liveness-and-readiness-probes
+    resources: [violation-probes]
+    kind: Deployment
+    result: fail
+  - policy: disallow-latest-tag
+    rule: autogen-require-versioned-image-tag
+    resources: [violation-latest]
+    kind: Deployment
+    result: fail

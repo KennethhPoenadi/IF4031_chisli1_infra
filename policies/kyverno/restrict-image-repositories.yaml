@@ -1,0 +1,25 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-image-repositories
+  annotations:
+    policies.kyverno.io/title: Restrict Image Repositories
+spec:
+  background: true
+  rules:
+    - name: require-group-image-repository
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [dev, prod]
+      validate:
+        failureAction: Enforce
+        message: Image must come from the group's Docker Hub repository.
+        foreach:
+          - list: request.object.spec.containers
+            pattern:
+              image: "__IMAGE_REPO__:*"
+          - list: request.object.spec.initContainers || `[]`
+            pattern:
+              image: "__IMAGE_REPO__:*"

@@ -1,0 +1,31 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-minimum-replicas
+spec:
+  background: true
+  rules:
+    - name: require-controller-minimum-replicas
+      match:
+        any:
+          - resources:
+              kinds: [Deployment, StatefulSet]
+              namespaces: [dev, prod]
+      validate:
+        failureAction: Enforce
+        message: Deployment and StatefulSet replicas must be at least one.
+        pattern:
+          spec:
+            =(replicas): ">=1"
+    - name: require-hpa-minimum-replicas
+      match:
+        any:
+          - resources:
+              kinds: [HorizontalPodAutoscaler]
+              namespaces: [dev, prod]
+      validate:
+        failureAction: Enforce
+        message: HPA minReplicas must be at least one.
+        pattern:
+          spec:
+            =(minReplicas): ">=1"

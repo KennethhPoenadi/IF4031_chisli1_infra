@@ -1,0 +1,23 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-latest-tag
+spec:
+  background: true
+  rules:
+    - name: require-versioned-image-tag
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [dev, prod]
+      validate:
+        failureAction: Enforce
+        message: Workloads must use a versioned image tag and may not use latest.
+        foreach:
+          - list: request.object.spec.containers
+            pattern:
+              image: "!*:latest"
+          - list: request.object.spec.initContainers || `[]`
+            pattern:
+              image: "!*:latest"

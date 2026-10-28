@@ -1,0 +1,125 @@
+# Each Deployment violates one policy; the remaining container fields are compliant.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: violation-image
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: violation-image }
+  template:
+    metadata:
+      labels: { app: violation-image }
+    spec:
+      containers:
+        - name: app
+          image: other/if4054-2026-t1-13523008-13523029-13523040:app-abc12345
+          securityContext: { runAsNonRoot: true, readOnlyRootFilesystem: true, allowPrivilegeEscalation: false }
+          resources: { limits: { cpu: 250m, memory: 128Mi } }
+          livenessProbe: { httpGet: { path: /health, port: 8080 } }
+          readinessProbe: { httpGet: { path: /health, port: 8080 } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: violation-rootfs
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: violation-rootfs }
+  template:
+    metadata:
+      labels: { app: violation-rootfs }
+    spec:
+      containers:
+        - name: app
+          image: __IMAGE_REPO__:app-abc12345
+          securityContext: { runAsNonRoot: true, readOnlyRootFilesystem: false, allowPrivilegeEscalation: false }
+          resources: { limits: { cpu: 250m, memory: 128Mi } }
+          livenessProbe: { httpGet: { path: /health, port: 8080 } }
+          readinessProbe: { httpGet: { path: /health, port: 8080 } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: violation-escalation
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: violation-escalation }
+  template:
+    metadata:
+      labels: { app: violation-escalation }
+    spec:
+      containers:
+        - name: app
+          image: __IMAGE_REPO__:app-abc12345
+          securityContext: { runAsNonRoot: true, readOnlyRootFilesystem: true, allowPrivilegeEscalation: true }
+          resources: { limits: { cpu: 250m, memory: 128Mi } }
+          livenessProbe: { httpGet: { path: /health, port: 8080 } }
+          readinessProbe: { httpGet: { path: /health, port: 8080 } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: violation-limits
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: violation-limits }
+  template:
+    metadata:
+      labels: { app: violation-limits }
+    spec:
+      containers:
+        - name: app
+          image: __IMAGE_REPO__:app-abc12345
+          securityContext: { runAsNonRoot: true, readOnlyRootFilesystem: true, allowPrivilegeEscalation: false }
+          resources: { limits: { cpu: 250m } }
+          livenessProbe: { httpGet: { path: /health, port: 8080 } }
+          readinessProbe: { httpGet: { path: /health, port: 8080 } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: violation-probes
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: violation-probes }
+  template:
+    metadata:
+      labels: { app: violation-probes }
+    spec:
+      containers:
+        - name: app
+          image: __IMAGE_REPO__:app-abc12345
+          securityContext: { runAsNonRoot: true, readOnlyRootFilesystem: true, allowPrivilegeEscalation: false }
+          resources: { limits: { cpu: 250m, memory: 128Mi } }
+          livenessProbe: { httpGet: { path: /health, port: 8080 } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: violation-latest
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: violation-latest }
+  template:
+    metadata:
+      labels: { app: violation-latest }
+    spec:
+      containers:
+        - name: app
+          image: __IMAGE_REPO__:latest
+          securityContext: { runAsNonRoot: true, readOnlyRootFilesystem: true, allowPrivilegeEscalation: false }
+          resources: { limits: { cpu: 250m, memory: 128Mi } }
+          livenessProbe: { httpGet: { path: /health, port: 8080 } }
+          readinessProbe: { httpGet: { path: /health, port: 8080 } }

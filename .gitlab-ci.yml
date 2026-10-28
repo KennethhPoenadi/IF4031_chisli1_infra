@@ -51,12 +51,14 @@ policies:
   stage: policies
   resource_group: xops-cluster
   script:
+    - test -n "$(find policies/kyverno -name '*.yaml' -print -quit)"
+    - ': "${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME belum diisi}"'
+    - export IMAGE_REPO="$(printf '%s' "$DOCKERHUB_USERNAME/if4054-2026-t1-13523008-13523029-13523040" | tr '[:upper:]' '[:lower:]')"
     - |
-      if ls policies/kyverno/*.yaml >/dev/null 2>&1; then
-        kubectl apply -f policies/kyverno/
-      else
-        echo "WARN: belum ada policy di policies/kyverno"
-      fi
+      for policy in policies/kyverno/*.yaml; do
+        sed "s|__IMAGE_REPO__|$IMAGE_REPO|g" "$policy" | kubectl apply -f -
+      done
+    - kubectl get clusterpolicy
   rules: *platform_rules
 
 secrets-dev:

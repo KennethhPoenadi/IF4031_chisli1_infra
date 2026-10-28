@@ -20,11 +20,25 @@ if [ -f charts/microservice/Chart.yaml ]; then
   fi
 else echo "SKIP: chart belum ada"; fi
 
-if find policies/tests -name 'kyverno-test.yaml' 2>/dev/null | grep -q .; then
-  if command -v kyverno >/dev/null; then
-    echo "==> kyverno test"
-    kyverno test policies/tests/
-  else echo "SKIP: kyverno CLI tidak terpasang"; fi
-else echo "SKIP: belum ada kyverno-test.yaml"; fi
+if ! find policies/kyverno -name '*.yaml' -print -quit | grep -q .; then
+  echo "ERROR: policy Kyverno tidak ditemukan" >&2
+  exit 1
+fi
+if ! find policies/tests -name 'kyverno-test.yaml' -print -quit | grep -q .; then
+  echo "ERROR: kyverno-test.yaml tidak ditemukan" >&2
+  exit 1
+fi
+
+echo "==> kyverno test"
+if command -v kyverno >/dev/null; then
+  kyverno test policies/tests/ --require-tests
+elif command -v docker >/dev/null; then
+  docker run --rm -v "$PWD:/work" -w /work \
+    ghcr.io/kyverno/kyverno-cli:v1.19.2 \
+    test policies/tests/ --require-tests
+else
+  echo "ERROR: kyverno CLI atau Docker wajib tersedia" >&2
+  exit 1
+fi
 
 echo "Validasi selesai."
