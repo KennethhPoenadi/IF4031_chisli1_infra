@@ -32,16 +32,19 @@ for img in "$@"; do
   name="${img%%:*}"
   tag="${img##*:}"
   if [ "$MODE" = repo ]; then
-    dest="$BASE:${name//\//-}-$tag"
+    dests=("$BASE:${name//\//-}-$tag" "$BASE:${name//\//-}-latest")
   else
-    dest="$BASE/$name:$tag"
+    dests=("$BASE/$name:$tag")
   fi
-  if docker manifest inspect "$dest" >/dev/null 2>&1; then
-    echo "SKIP $dest sudah ada"
-    continue
-  fi
-  docker pull "$img"
-  docker tag "$img" "$dest"
-  docker push --quiet "$dest"
-  echo "OK -> $dest"
+  pulled=0
+  for dest in "${dests[@]}"; do
+    if docker manifest inspect "$dest" >/dev/null 2>&1; then
+      echo "SKIP $dest sudah ada"
+      continue
+    fi
+    if [ "$pulled" = 0 ]; then docker pull "$img"; pulled=1; fi
+    docker tag "$img" "$dest"
+    docker push --quiet "$dest"
+    echo "OK -> $dest"
+  done
 done

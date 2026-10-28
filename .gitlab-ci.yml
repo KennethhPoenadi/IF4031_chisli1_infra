@@ -25,6 +25,8 @@ validate:
   stage: validate
   script:
     - ./scripts/validate.sh
+  rules:
+    - if: $CI_PIPELINE_SOURCE != "pipeline"
 
 mirror-images:
   stage: mirror
