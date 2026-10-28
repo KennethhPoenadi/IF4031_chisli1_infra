@@ -143,3 +143,13 @@ results:
     resources: [violation-latest]
     kind: Deployment
     result: fail
+  - policy: require-container-security
+    rule: autogen-require-run-as-non-root
+    resources: [violation-non-root]
+    kind: Deployment
+    result: fail
+  - policy: require-minimum-replicas
+    rule: require-controller-minimum-replicas
+    resources: [violation-zero-replicas]
+    kind: Deployment
+    result: fail

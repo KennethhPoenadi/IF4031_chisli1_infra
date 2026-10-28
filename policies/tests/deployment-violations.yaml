@@ -23,6 +23,48 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: violation-non-root
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: violation-non-root }
+  template:
+    metadata:
+      labels: { app: violation-non-root }
+    spec:
+      containers:
+        - name: app
+          image: __IMAGE_REPO__:app-abc12345
+          securityContext: { runAsNonRoot: false, readOnlyRootFilesystem: true, allowPrivilegeEscalation: false }
+          resources: { limits: { cpu: 250m, memory: 128Mi } }
+          livenessProbe: { httpGet: { path: /health, port: 8080 } }
+          readinessProbe: { httpGet: { path: /health, port: 8080 } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: violation-zero-replicas
+  namespace: dev
+spec:
+  replicas: 0
+  selector:
+    matchLabels: { app: violation-zero-replicas }
+  template:
+    metadata:
+      labels: { app: violation-zero-replicas }
+    spec:
+      containers:
+        - name: app
+          image: __IMAGE_REPO__:app-abc12345
+          securityContext: { runAsNonRoot: true, readOnlyRootFilesystem: true, allowPrivilegeEscalation: false }
+          resources: { limits: { cpu: 250m, memory: 128Mi } }
+          livenessProbe: { httpGet: { path: /health, port: 8080 } }
+          readinessProbe: { httpGet: { path: /health, port: 8080 } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: violation-rootfs
   namespace: dev
 spec:

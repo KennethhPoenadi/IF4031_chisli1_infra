@@ -13,6 +13,8 @@ if [ -f charts/microservice/Chart.yaml ]; then
   if command -v helm >/dev/null; then
     echo "==> helm lint"
     helm lint charts/microservice
+    echo "==> validasi cakupan HPA"
+    bash ./scripts/validate-hpa-coverage.sh
     if command -v kubeconform >/dev/null; then
       echo "==> kubeconform"
       ./scripts/render-all.sh | kubeconform -strict -ignore-missing-schemas -summary
