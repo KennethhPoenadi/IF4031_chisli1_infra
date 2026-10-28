@@ -58,7 +58,9 @@ policies:
       for policy in policies/kyverno/*.yaml; do
         sed "s|__IMAGE_REPO__|$IMAGE_REPO|g" "$policy" | kubectl apply -f -
       done
+    - kubectl wait --for=condition=Ready clusterpolicy --all --timeout=120s
     - kubectl get clusterpolicy
+    - ./scripts/test-kyverno-admission.sh
   rules: *platform_rules
 
 secrets-dev:
