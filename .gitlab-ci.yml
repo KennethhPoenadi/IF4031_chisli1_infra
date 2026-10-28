@@ -9,9 +9,17 @@ variables:
   REQUIRE_CHART: "false"
   MIRROR_IMAGES: "mongo:7 rabbitmq:3-management"
   MIRROR_REPO: "docker.io/$DOCKERHUB_USERNAME/if4054-2026-t1-13523008-13523029-13523040"
+  GITOPS_RUNNER_TAG: "gitlab--duo"
+  GITOPS_IMAGE: "alpine:3.20"
 
 .platform_rules: &platform_rules
   - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE != "pipeline"
+
+.gitops_job:
+  tags: [$GITOPS_RUNNER_TAG]
+  image: $GITOPS_IMAGE
+  before_script:
+    - apk add --no-cache git bash
 
 validate:
   stage: validate
@@ -79,16 +87,18 @@ bootstrap-argocd:
   rules: *platform_rules
 
 release-dev:
+  extends: .gitops_job
   stage: release
   resource_group: xops-release
   environment:
     name: dev
   script:
-    - ./scripts/set-tags.sh dev "$IMAGE_TAG"
+    - bash ./scripts/set-tags.sh dev "$IMAGE_TAG"
   rules:
     - if: $CI_COMMIT_BRANCH == "main" && ($CI_PIPELINE_SOURCE == "pipeline" || $CI_PIPELINE_SOURCE == "web") && $IMAGE_TAG
 
 release-prod:
+  extends: .gitops_job
   stage: promote
   resource_group: xops-release
   environment:
@@ -101,7 +111,7 @@ release-prod:
       if [ "$GITLAB_USER_LOGIN" != "$PROD_APPROVER" ]; then
         echo "ERROR: hanya $PROD_APPROVER yang boleh menyetujui deploy ke prod"; exit 1
       fi
-    - ./scripts/set-tags.sh prod
+    - bash ./scripts/set-tags.sh prod
   rules:
     - if: $CI_COMMIT_BRANCH == "main" && ($CI_PIPELINE_SOURCE == "pipeline" || $CI_PIPELINE_SOURCE == "web")
       when: manual
