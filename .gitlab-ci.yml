@@ -8,7 +8,7 @@ default:
 variables:
   REQUIRE_CHART: "false"
   MIRROR_IMAGES: "mongo:7 rabbitmq:3-management"
-  MIRROR_REPO: "docker.io/$DOCKERHUB_USERNAME/if4054-2026-t1-13523008-13523029-13523040"
+  MIRROR_REPO: "docker.io/$DOCKERHUB_USERNAME/$APP_IMAGE_NAME"
   GITOPS_RUNNER_TAG: "gitlab--duo"
   GITOPS_IMAGE: "alpine:3.20"
 
@@ -62,7 +62,8 @@ policies:
   script:
     - test -n "$(find policies/kyverno -name '*.yaml' -print -quit)"
     - ': "${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME belum diisi}"'
-    - export IMAGE_REPO="$(printf '%s' "$DOCKERHUB_USERNAME/if4054-2026-t1-13523008-13523029-13523040" | tr '[:upper:]' '[:lower:]')"
+    - ': "${APP_IMAGE_NAME:?APP_IMAGE_NAME belum diisi}"'
+    - export IMAGE_REPO="$(printf '%s' "$DOCKERHUB_USERNAME/$APP_IMAGE_NAME" | tr '[:upper:]' '[:lower:]')"
     - |
       for policy in policies/kyverno/*.yaml; do
         sed "s|__IMAGE_REPO__|$IMAGE_REPO|g" "$policy" | kubectl apply -f -

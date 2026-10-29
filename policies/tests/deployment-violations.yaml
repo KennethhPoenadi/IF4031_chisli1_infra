@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
         - name: app
-          image: other/if4054-2026-t1-13523008-13523029-13523040:app-abc12345
+          image: other/app:app-abc12345
           securityContext: { runAsNonRoot: true, readOnlyRootFilesystem: true, allowPrivilegeEscalation: false }
           resources: { limits: { cpu: 250m, memory: 128Mi } }
           livenessProbe: { httpGet: { path: /health, port: 8080 } }

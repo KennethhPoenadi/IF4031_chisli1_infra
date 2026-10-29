@@ -7,8 +7,7 @@ if [ -z "$REPO_URL" ]; then
   REPO_URL="${CI_PROJECT_URL:+$CI_PROJECT_URL.git}"
   REPO_URL="${REPO_URL:-$(git remote get-url origin | sed -E 's#//[^@/]+@#//#')}"
 fi
-APP_IMAGE_NAME="${APP_IMAGE_NAME:-if4054-2026-t1-13523008-13523029-13523040}"
-IMAGE_REPO="${IMAGE_REPO:-${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME belum diisi}/$APP_IMAGE_NAME}"
+IMAGE_REPO="${IMAGE_REPO:-${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME belum diisi}/${APP_IMAGE_NAME:?APP_IMAGE_NAME belum diisi}}"
 IMAGE_REPO="$(printf '%s' "$IMAGE_REPO" | tr '[:upper:]' '[:lower:]')"
 
 if [ -n "${GITOPS_TOKEN:-}" ]; then
