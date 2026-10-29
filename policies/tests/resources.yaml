@@ -156,6 +156,26 @@ spec:
       readinessProbe:
         httpGet: { path: /health, port: 8080 }
 ---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-service-latest-tag
+  namespace: dev
+spec:
+  containers:
+    - name: app
+      image: __IMAGE_REPO__:aggregator-latest
+      securityContext:
+        runAsNonRoot: true
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+      resources:
+        limits: { cpu: 250m, memory: 128Mi }
+      livenessProbe:
+        httpGet: { path: /health, port: 8080 }
+      readinessProbe:
+        httpGet: { path: /health, port: 8080 }
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:

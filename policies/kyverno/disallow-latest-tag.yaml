@@ -13,11 +13,11 @@ spec:
               namespaces: [dev, prod]
       validate:
         failureAction: Enforce
-        message: Workloads must use a versioned image tag and may not use latest.
+        message: Workloads must use a versioned image tag; tags ending in latest (for example :latest or <service>-latest) are not allowed.
         foreach:
           - list: request.object.spec.containers
             pattern:
-              image: "!*:latest"
+              image: "!*latest"
           - list: request.object.spec.initContainers || `[]`
             pattern:
-              image: "!*:latest"
+              image: "!*latest"

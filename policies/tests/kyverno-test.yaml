@@ -80,6 +80,11 @@ results:
     result: fail
   - policy: disallow-latest-tag
     rule: require-versioned-image-tag
+    resources: [bad-service-latest-tag]
+    kind: Pod
+    result: fail
+  - policy: disallow-latest-tag
+    rule: require-versioned-image-tag
     resources: [compliant-pod]
     kind: Pod
     result: pass

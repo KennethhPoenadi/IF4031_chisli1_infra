@@ -19,7 +19,15 @@ variables:
   tags: [$GITOPS_RUNNER_TAG]
   image: $GITOPS_IMAGE
   before_script:
-    - apk add --no-cache git bash
+    # The shared runner's route to dl-cdn.alpinelinux.org is occasionally flaky, so retry the install.
+    - |
+      for attempt in 1 2 3 4 5; do
+        apk add --no-cache git bash && break
+        echo "apk gagal (percobaan $attempt/5), mencoba lagi dalam 10 detik"
+        sleep 10
+      done
+    - git --version
+    - bash --version | head -n 1
 
 validate:
   stage: validate
