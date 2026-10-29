@@ -19,7 +19,6 @@ variables:
   tags: [$GITOPS_RUNNER_TAG]
   image: $GITOPS_IMAGE
   before_script:
-    # The shared runner's route to dl-cdn.alpinelinux.org is occasionally flaky, so retry the install.
     - |
       for attempt in 1 2 3 4 5; do
         apk add --no-cache git bash && break

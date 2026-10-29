@@ -1,4 +1,3 @@
-# Each Deployment violates one policy; the remaining container fields are compliant.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
