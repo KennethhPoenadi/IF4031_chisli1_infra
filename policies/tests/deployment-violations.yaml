@@ -164,3 +164,24 @@ spec:
           resources: { limits: { cpu: 250m, memory: 128Mi } }
           livenessProbe: { httpGet: { path: /health, port: 8080 } }
           readinessProbe: { httpGet: { path: /health, port: 8080 } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: violation-no-hpa
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: violation-no-hpa }
+  template:
+    metadata:
+      labels: { app: violation-no-hpa }
+    spec:
+      containers:
+        - name: app
+          image: __IMAGE_REPO__:app-abc12345
+          securityContext: { runAsNonRoot: true, readOnlyRootFilesystem: true, allowPrivilegeEscalation: false }
+          resources: { limits: { cpu: 250m, memory: 128Mi } }
+          livenessProbe: { httpGet: { path: /health, port: 8080 } }
+          readinessProbe: { httpGet: { path: /health, port: 8080 } }

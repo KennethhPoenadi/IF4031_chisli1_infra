@@ -14,7 +14,7 @@ Kode aplikasi dan pipeline build image ada di repositori aplikasi. Dokumentasi l
 | `envs/dev`, `envs/prod` | Values per service dan per environment |
 | `envs/<env>/tags/` | Tag image per service, ditulis oleh job `release-*` dan dibaca Argo CD |
 | `argocd/` | `ApplicationSet` yang menghasilkan 18 Application (9 workload × 2 environment) |
-| `policies/kyverno/` | Enam ClusterPolicy |
+| `policies/kyverno/` | Tujuh ClusterPolicy dan satu ClusterRole untuk membaca HPA |
 | `policies/tests/` | Tes Kyverno CLI dan manifest pelanggaran untuk uji penolakan di cluster |
 | `scripts/` | Script yang dipanggil pipeline, dan dapat dijalankan lokal |
 | `tests/k6/` | Skrip uji beban untuk HPA |
@@ -38,8 +38,9 @@ Kode aplikasi dan pipeline build image ada di repositori aplikasi. Dokumentasi l
 | `require-resource-limits` | Limit CPU dan memory pada setiap container |
 | `require-health-probes` | Liveness dan readiness probe |
 | `require-minimum-replicas` | Replika Deployment, StatefulSet, dan `minReplicas` HPA minimal 1 |
+| `require-hpa` | Setiap Deployment harus ditarget oleh sebuah HPA (StatefulSet tidak termasuk) |
 
-Keberadaan HPA pada setiap Deployment diperiksa di CI oleh `scripts/validate-hpa-coverage.sh`, bukan oleh Kyverno.
+`require-hpa` membaca daftar HPA lewat `apiCall`, sehingga Kyverno memerlukan ClusterRole `allow-hpa-read.yaml`. HPA diberi `sync-wave: "-1"` agar Argo CD membuatnya sebelum Deployment. Keberadaan HPA juga dicek di CI oleh `scripts/validate-hpa-coverage.sh`.
 
 ## Pipeline
 
@@ -118,5 +119,5 @@ Script menjalankan k6 ke `client-facing-api` dan menyimpan keadaan HPA sebelum, 
 ```
 kyverno test policies/tests
 export IMAGE_REPO=<username>/<nama-repo-image>
-./scripts/test-kyverno-admission.sh      # delapan manifest pelanggaran harus ditolak
+./scripts/test-kyverno-admission.sh      # sembilan manifest pelanggaran harus ditolak
 ```

@@ -9,9 +9,20 @@ policies:
   - ../kyverno/require-health-probes.yaml
   - ../kyverno/require-minimum-replicas.yaml
   - ../kyverno/disallow-latest-tag.yaml
+  - ../kyverno/require-hpa.yaml
 resources:
   - resources.yaml
   - deployment-violations.yaml
+values:
+  policies:
+    - name: require-hpa
+      resources:
+        - name: compliant-deployment
+          values:
+            matchingHpas: 1
+        - name: violation-no-hpa
+          values:
+            matchingHpas: 0
 results:
   - policy: restrict-image-repositories
     rule: require-group-image-repository
@@ -158,3 +169,13 @@ results:
     resources: [violation-zero-replicas]
     kind: Deployment
     result: fail
+  - policy: require-hpa
+    rule: require-hpa-for-deployment
+    resources: [violation-no-hpa]
+    kind: Deployment
+    result: fail
+  - policy: require-hpa
+    rule: require-hpa-for-deployment
+    resources: [compliant-deployment]
+    kind: Deployment
+    result: pass
