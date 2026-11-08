@@ -32,7 +32,7 @@ Kode aplikasi dan pipeline build image ada di repositori aplikasi. Dokumentasi l
 
 | Policy | Menegakkan |
 | --- | --- |
-| `restrict-image-repositories` | Image hanya dari repositori Docker Hub kelompok |
+| `restrict-image-repositories` | Image hanya dari repositori image kelompok di `ghcr.io` |
 | `disallow-latest-tag` | Tag harus versi, bukan `latest` atau `<service>-latest` |
 | `require-container-security` | `runAsNonRoot`, `readOnlyRootFilesystem`, `allowPrivilegeEscalation: false` |
 | `require-resource-limits` | Limit CPU dan memory pada setiap container |
@@ -49,11 +49,11 @@ Didefinisikan di `.github/workflows/ci.yml` (validate dan platform) dan `.github
 | Stage | Job | Fungsi |
 | --- | --- | --- |
 | `validate` | `validate` | Sintaks script, `terraform validate`, `helm lint`, cakupan HPA, `kubeconform`, `kyverno test` |
-| `mirror` | `mirror-images` | Menyalin MongoDB dan RabbitMQ ke repositori Docker Hub kelompok |
+| `mirror` | `mirror-images` | Menyalin MongoDB dan RabbitMQ ke repositori image kelompok di `ghcr.io` |
 | `cluster` | `cluster` | `terraform apply` untuk cluster kind |
 | `platform` | `platform` | Traefik, metrics-server, Kyverno, Argo CD, dan namespace `dev` dan `prod` |
 | `policies` | `policies` | Menerapkan policy, menunggu Ready, lalu menguji penolakan manifest pelanggaran di cluster |
-| `secrets` | `secrets` (matriks `dev`, `prod`) | Secret `gitlab-registry` dan `app-secrets` per namespace |
+| `secrets` | `secrets` (matriks `dev`, `prod`) | Secret `registry-credentials` (pull image) dan `app-secrets` per namespace |
 | `bootstrap` | `bootstrap-argocd` | Menerapkan `ApplicationSet` |
 | `release` | `release-dev` | Menulis tag dev, dipicu oleh workflow aplikasi |
 | `promote` | `release-prod` | Menyalin tag dev ke prod, manual |
@@ -66,9 +66,10 @@ Diisi di Settings → Secrets and variables → Actions. Nilainya tidak disimpan
 
 | Nama | Jenis | Fungsi |
 | --- | --- | --- |
-| `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | Secret | Mirror image database dan `imagePullSecret` di cluster |
+| `GHCR_PULL_TOKEN` | Secret | Classic PAT dengan **hanya** scope `read:packages`, dipakai kubelet untuk menarik image private (`imagePullSecret`) |
+| `GHCR_PULL_USER` | Variable | Pemilik token di atas. Opsional, default-nya pemilik repositori |
 | `GITOPS_TOKEN` | Secret | Fine-grained PAT (Contents read/write pada repo ini): push commit tag dari `release-*` dan akses baca Argo CD |
-| `APP_IMAGE_NAME` | Variable | Nama repositori image aplikasi di Docker Hub |
+| `APP_IMAGE_NAME` | Variable | Nama image di `ghcr.io/<owner>/`. Harus sama dengan yang dibangun repositori aplikasi |
 | `PROD_APPROVER` | Variable | Username GitHub penyetuju promosi ke prod |
 | Daftar di `scripts/secret-keys.txt` | Secret, per environment | Isi Secret `app-secrets`. Simpan sebagai environment secret di `dev` dan `prod`. Menambah key baru berarti menambahkannya juga ke job `secrets` di `ci.yml` |
 
@@ -79,6 +80,14 @@ Environment (Settings → Environments):
 | `dev`, `prod` | Menyimpan secret per environment. Jangan beri required reviewers, karena job `secrets` memakainya di setiap push |
 | `prod-release` | Gerbang promosi. Beri required reviewers agar `release-prod` menunggu persetujuan |
 
+## Registry (GHCR)
+
+Semua image berada di satu repositori, `ghcr.io/<owner>/<APP_IMAGE_NAME>` (nama selalu lowercase, dihitung `scripts/image-repo.sh`), dengan tag `<service>-<sha8>`.
+
+- **Push** dilakukan repositori aplikasi dengan `GITHUB_TOKEN` bawaan, tanpa kredensial yang disimpan.
+- **Pull** oleh cluster memakai Secret `registry-credentials` yang dibuat dari `GHCR_PULL_TOKEN`. Token ini hanya boleh punya scope `read:packages`. Package dibiarkan private.
+- **Mirror MongoDB dan RabbitMQ** menulis ke package yang sama dari repositori ini. Karena package dimiliki repositori aplikasi (yang membuatnya pertama), beri repositori `infra` akses **Write** sekali lewat Package settings → Manage Actions access. Sebelum itu job `mirror-images` gagal, dan itu ditoleransi.
+
 ## Menjalankan lokal
 
 Prasyarat: Docker (misalnya Colima), `terraform`, `kubectl`, `helm`, dan `kyverno` CLI. Semua script memuat `scripts/env.sh`, yang mengarahkan `KUBECONFIG` ke `~/.kube/xops-config`.
@@ -88,7 +97,8 @@ Prasyarat: Docker (misalnya Colima), `terraform`, `kubectl`, `helm`, dan `kyvern
 ./scripts/cluster-up.sh                  # terraform apply, membuat cluster kind
 ./scripts/platform.sh                    # Traefik, metrics-server, Kyverno, Argo CD
 
-export DOCKERHUB_USERNAME=<username> DOCKERHUB_TOKEN=<token> APP_IMAGE_NAME=<nama-repo-image>
+export REGISTRY_OWNER=<owner-github> APP_IMAGE_NAME=<nama-image>
+export REGISTRY_USER=<username> REGISTRY_PASS=<PAT read:packages>
 # create-secrets.sh juga membaca setiap variabel di secret-keys.txt; bisa dimuat lewat ENV_FILE=<file>
 ./scripts/create-secrets.sh dev          # ulangi untuk prod
 ./scripts/bootstrap-argocd.sh            # ApplicationSet, lalu Argo CD mulai sinkronisasi
@@ -126,6 +136,6 @@ Script menjalankan k6 ke `client-facing-api` dan menyimpan keadaan HPA sebelum, 
 
 ```
 kyverno test policies/tests
-export IMAGE_REPO=<username>/<nama-repo-image>
+export IMAGE_REPO="$(REGISTRY_OWNER=<owner-github> APP_IMAGE_NAME=<nama-image> ./scripts/image-repo.sh)"
 ./scripts/test-kyverno-admission.sh      # sembilan manifest pelanggaran harus ditolak
 ```

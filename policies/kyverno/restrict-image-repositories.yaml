@@ -15,7 +15,7 @@ spec:
               namespaces: [dev, prod]
       validate:
         failureAction: Enforce
-        message: Image must come from the group's Docker Hub repository.
+        message: Image must come from the group's container registry repository.
         foreach:
           - list: request.object.spec.containers
             pattern:

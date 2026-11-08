@@ -7,7 +7,7 @@ if [ -z "$REPO_URL" ]; then
   REPO_URL="${GITHUB_REPOSITORY:+${GITHUB_SERVER_URL:-https://github.com}/$GITHUB_REPOSITORY.git}"
   REPO_URL="${REPO_URL:-$(git remote get-url origin | sed -E 's#//[^@/]+@#//#')}"
 fi
-IMAGE_REPO="${IMAGE_REPO:-${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME belum diisi}/${APP_IMAGE_NAME:?APP_IMAGE_NAME belum diisi}}"
+IMAGE_REPO="${IMAGE_REPO:-$(scripts/image-repo.sh)}"
 IMAGE_REPO="$(printf '%s' "$IMAGE_REPO" | tr '[:upper:]' '[:lower:]')"
 
 if [ -n "${GITOPS_TOKEN:-}" ]; then

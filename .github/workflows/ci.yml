@@ -38,14 +38,20 @@ jobs:
     needs: [validate]
     runs-on: [self-hosted, k8s-local]
     continue-on-error: true
+    # The package is owned by the app repo, so grant this repo Write once under the package's
+    # "Manage Actions access"; until then this job fails, which is tolerated (continue-on-error).
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
-      - run: ./scripts/mirror-images.sh $MIRROR_IMAGES
+      - run: |
+          MIRROR_REPO="$(./scripts/image-repo.sh)" ./scripts/mirror-images.sh $MIRROR_IMAGES
         env:
           MIRROR_IMAGES: "mongo:7 rabbitmq:3-management"
-          MIRROR_REPO: "docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ vars.APP_IMAGE_NAME }}"
-          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          APP_IMAGE_NAME: ${{ vars.APP_IMAGE_NAME }}
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_PASS: ${{ secrets.GITHUB_TOKEN }}
 
   cluster:
     if: ${{ !cancelled() && needs.validate.result == 'success' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
@@ -75,16 +81,13 @@ jobs:
       group: xops-cluster
       cancel-in-progress: false
     env:
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       APP_IMAGE_NAME: ${{ vars.APP_IMAGE_NAME }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/load-env
       - run: |
           test -n "$(find policies/kyverno -name '*.yaml' -print -quit)"
-          : "${DOCKERHUB_USERNAME:?secret DOCKERHUB_USERNAME belum diisi}"
-          : "${APP_IMAGE_NAME:?variable APP_IMAGE_NAME belum diisi}"
-          export IMAGE_REPO="$(printf '%s' "$DOCKERHUB_USERNAME/$APP_IMAGE_NAME" | tr '[:upper:]' '[:lower:]')"
+          export IMAGE_REPO="$(./scripts/image-repo.sh)"
           for policy in policies/kyverno/*.yaml; do
             sed "s|__IMAGE_REPO__|$IMAGE_REPO|g" "$policy" | kubectl apply -f -
           done
@@ -107,8 +110,9 @@ jobs:
       group: xops-cluster
       cancel-in-progress: false
     env:
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      # Read-only pull credentials for the cluster (classic PAT, read:packages only).
+      REGISTRY_USER: ${{ vars.GHCR_PULL_USER || github.repository_owner }}
+      REGISTRY_PASS: ${{ secrets.GHCR_PULL_TOKEN }}
       # Keep in sync with scripts/secret-keys.txt.
       BMKG_API_KEY: ${{ secrets.BMKG_API_KEY }}
       PVMBG_TOKEN: ${{ secrets.PVMBG_TOKEN }}
@@ -136,7 +140,6 @@ jobs:
       group: xops-cluster
       cancel-in-progress: false
     env:
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       APP_IMAGE_NAME: ${{ vars.APP_IMAGE_NAME }}
       GITOPS_TOKEN: ${{ secrets.GITOPS_TOKEN }}
     steps:

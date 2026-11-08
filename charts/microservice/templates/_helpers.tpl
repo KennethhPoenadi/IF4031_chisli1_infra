@@ -39,7 +39,7 @@ spec:
     {{- toYaml .Values.podSecurityContext | nindent 4 }}
   containers:
     - name: {{ include "microservice.name" . }}
-      image: "{{ required "image.repository wajib diisi (deploy.sh dari DOCKERHUB_USERNAME)" .Values.image.repository }}:{{ required "image.tag wajib diisi (--set image.tag=<service>-<sha>)" .Values.image.tag }}"
+      image: "{{ required "image.repository wajib diisi (ApplicationSet, dari scripts/image-repo.sh)" .Values.image.repository }}:{{ required "image.tag wajib diisi (--set image.tag=<service>-<sha>)" .Values.image.tag }}"
       imagePullPolicy: {{ .Values.image.pullPolicy }}
       {{- with .Values.args }}
       args:

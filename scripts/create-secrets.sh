@@ -10,13 +10,14 @@ fi
 
 kubectl create namespace "$ENV_NAME" --dry-run=client -o yaml | kubectl apply -f -
 
-: "${REGISTRY_SERVER:=https://index.docker.io/v1/}"
-REGISTRY_USER="${REGISTRY_USER:-${DOCKERHUB_USERNAME:-}}"
-REGISTRY_PASS="${REGISTRY_PASS:-${DOCKERHUB_TOKEN:-}}"
+# Pull credentials for the image registry. Use a read-only token (GHCR: classic PAT with only read:packages).
+: "${REGISTRY_SERVER:=ghcr.io}"
+REGISTRY_USER="${REGISTRY_USER:-}"
+REGISTRY_PASS="${REGISTRY_PASS:-}"
 for v in REGISTRY_SERVER REGISTRY_USER REGISTRY_PASS; do
   [ -n "${!v:-}" ] || { echo "ERROR: variabel $v kosong" >&2; exit 1; }
 done
-kubectl create secret docker-registry gitlab-registry \
+kubectl create secret docker-registry registry-credentials \
   --docker-server="$REGISTRY_SERVER" \
   --docker-username="$REGISTRY_USER" \
   --docker-password="$REGISTRY_PASS" \
@@ -41,4 +42,4 @@ fi
 kubectl create secret generic app-secrets "${args[@]}" \
   -n "$ENV_NAME" --dry-run=client -o yaml | kubectl apply -f -
 
-echo "Secret gitlab-registry dan app-secrets siap di namespace $ENV_NAME"
+echo "Secret registry-credentials dan app-secrets siap di namespace $ENV_NAME"
