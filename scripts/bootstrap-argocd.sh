@@ -4,7 +4,7 @@ source scripts/env.sh
 
 REPO_URL="${GITOPS_REPO_URL:-}"
 if [ -z "$REPO_URL" ]; then
-  REPO_URL="${CI_PROJECT_URL:+$CI_PROJECT_URL.git}"
+  REPO_URL="${GITHUB_REPOSITORY:+${GITHUB_SERVER_URL:-https://github.com}/$GITHUB_REPOSITORY.git}"
   REPO_URL="${REPO_URL:-$(git remote get-url origin | sed -E 's#//[^@/]+@#//#')}"
 fi
 IMAGE_REPO="${IMAGE_REPO:-${DOCKERHUB_USERNAME:?DOCKERHUB_USERNAME belum diisi}/${APP_IMAGE_NAME:?APP_IMAGE_NAME belum diisi}}"
@@ -14,7 +14,7 @@ if [ -n "${GITOPS_TOKEN:-}" ]; then
   kubectl -n argocd create secret generic gitops-repo \
     --from-literal=type=git \
     --from-literal=url="$REPO_URL" \
-    --from-literal=username=oauth2 \
+    --from-literal=username=x-access-token \
     --from-literal=password="$GITOPS_TOKEN" \
     --dry-run=client -o yaml \
     | kubectl label --local -f - argocd.argoproj.io/secret-type=repository -o yaml \

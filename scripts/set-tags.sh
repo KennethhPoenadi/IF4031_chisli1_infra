@@ -7,8 +7,9 @@ APP_SERVICES=(auth-service bmkg-mock pvmbg-mock aggregator client-facing-api not
 
 PUSH_URL="${GITOPS_PUSH_URL:-}"
 if [ -z "$PUSH_URL" ]; then
-  base="${CI_PROJECT_URL:?CI_PROJECT_URL kosong}"
-  PUSH_URL="${base/https:\/\//https://oauth2:${GITOPS_TOKEN:?GITOPS_TOKEN belum diisi}@}.git"
+  server="${GITHUB_SERVER_URL:?GITHUB_SERVER_URL kosong (jalankan di GitHub Actions atau set GITOPS_PUSH_URL)}"
+  repo="${GITHUB_REPOSITORY:?GITHUB_REPOSITORY kosong}"
+  PUSH_URL="${server/https:\/\//https://x-access-token:${GITOPS_TOKEN:?GITOPS_TOKEN belum diisi}@}/$repo.git"
 fi
 
 if [ -n "${CI:-}" ]; then
@@ -32,7 +33,9 @@ done
 git add "envs/$ENV_NAME/tags"
 if git diff --cached --quiet; then echo "Tag sudah terbaru, tidak ada perubahan"; exit 0; fi
 
-git -c user.name="${GITLAB_USER_NAME:-xops-ci}" -c user.email="${GITLAB_USER_EMAIL:-ci@xops.local}" \
+GIT_NAME="${GITHUB_ACTOR:-xops-ci}"
+GIT_EMAIL="${GITHUB_ACTOR:+$GITHUB_ACTOR@users.noreply.github.com}"
+git -c user.name="$GIT_NAME" -c user.email="${GIT_EMAIL:-ci@xops.local}" \
   commit -m "chore($ENV_NAME): set image tags ${SHA:-from dev} [skip ci]"
 
 git fetch "$PUSH_URL" main

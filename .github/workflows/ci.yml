@@ -1,0 +1,144 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # Runs on GitHub-hosted runners, so it is safe for pull requests. Everything below touches the
+  # local cluster and runs only for main, on the self-hosted runner labelled k8s-local.
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+      - uses: azure/setup-helm@v4
+      - name: Install kubeconform
+        run: |
+          curl -fsSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz \
+            | sudo tar -xz -C /usr/local/bin kubeconform
+          kubeconform -v
+      # validate.sh runs the Kyverno CLI through Docker when it is not installed.
+      - run: ./scripts/validate.sh
+
+  mirror-images:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: [validate]
+    runs-on: [self-hosted, k8s-local]
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/mirror-images.sh $MIRROR_IMAGES
+        env:
+          MIRROR_IMAGES: "mongo:7 rabbitmq:3-management"
+          MIRROR_REPO: "docker.io/${{ secrets.DOCKERHUB_USERNAME }}/${{ vars.APP_IMAGE_NAME }}"
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  cluster:
+    if: ${{ !cancelled() && needs.validate.result == 'success' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+    needs: [validate, mirror-images]
+    runs-on: [self-hosted, k8s-local]
+    concurrency:
+      group: xops-cluster
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/cluster-up.sh
+
+  platform:
+    needs: [cluster]
+    runs-on: [self-hosted, k8s-local]
+    concurrency:
+      group: xops-cluster
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/platform.sh
+
+  policies:
+    needs: [platform]
+    runs-on: [self-hosted, k8s-local]
+    concurrency:
+      group: xops-cluster
+      cancel-in-progress: false
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      APP_IMAGE_NAME: ${{ vars.APP_IMAGE_NAME }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/load-env
+      - run: |
+          test -n "$(find policies/kyverno -name '*.yaml' -print -quit)"
+          : "${DOCKERHUB_USERNAME:?secret DOCKERHUB_USERNAME belum diisi}"
+          : "${APP_IMAGE_NAME:?variable APP_IMAGE_NAME belum diisi}"
+          export IMAGE_REPO="$(printf '%s' "$DOCKERHUB_USERNAME/$APP_IMAGE_NAME" | tr '[:upper:]' '[:lower:]')"
+          for policy in policies/kyverno/*.yaml; do
+            sed "s|__IMAGE_REPO__|$IMAGE_REPO|g" "$policy" | kubectl apply -f -
+          done
+          kubectl wait --for=condition=Ready clusterpolicy --all --timeout=120s
+          kubectl get clusterpolicy
+          ./scripts/test-kyverno-admission.sh
+
+  # One job per environment. The `dev` and `prod` GitHub environments hold that environment's
+  # secrets (everything listed in scripts/secret-keys.txt). Do not add required reviewers to them:
+  # that would block this job on every push. Promotion approval lives on `prod-release`.
+  secrets:
+    needs: [policies]
+    runs-on: [self-hosted, k8s-local]
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [dev, prod]
+    environment: ${{ matrix.env }}
+    concurrency:
+      group: xops-cluster
+      cancel-in-progress: false
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      # Keep in sync with scripts/secret-keys.txt.
+      BMKG_API_KEY: ${{ secrets.BMKG_API_KEY }}
+      PVMBG_TOKEN: ${{ secrets.PVMBG_TOKEN }}
+      AUTH_SIGNING_SEED: ${{ secrets.AUTH_SIGNING_SEED }}
+      AUTH_INTERNAL_KEY: ${{ secrets.AUTH_INTERNAL_KEY }}
+      AUTH_CLIENT_MEDIA_ID: ${{ secrets.AUTH_CLIENT_MEDIA_ID }}
+      AUTH_CLIENT_MEDIA_SECRET: ${{ secrets.AUTH_CLIENT_MEDIA_SECRET }}
+      AUTH_CLIENT_FIELD_ID: ${{ secrets.AUTH_CLIENT_FIELD_ID }}
+      AUTH_CLIENT_FIELD_SECRET: ${{ secrets.AUTH_CLIENT_FIELD_SECRET }}
+      AUTH_CLIENT_OPS_ID: ${{ secrets.AUTH_CLIENT_OPS_ID }}
+      AUTH_CLIENT_OPS_SECRET: ${{ secrets.AUTH_CLIENT_OPS_SECRET }}
+      AGGREGATOR_API_KEY: ${{ secrets.AGGREGATOR_API_KEY }}
+      MONGO_ROOT_USERNAME: ${{ secrets.MONGO_ROOT_USERNAME }}
+      MONGO_ROOT_PASSWORD: ${{ secrets.MONGO_ROOT_PASSWORD }}
+      RABBITMQ_USER: ${{ secrets.RABBITMQ_USER }}
+      RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/create-secrets.sh ${{ matrix.env }}
+
+  bootstrap-argocd:
+    needs: [secrets]
+    runs-on: [self-hosted, k8s-local]
+    concurrency:
+      group: xops-cluster
+      cancel-in-progress: false
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      APP_IMAGE_NAME: ${{ vars.APP_IMAGE_NAME }}
+      GITOPS_TOKEN: ${{ secrets.GITOPS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/bootstrap-argocd.sh

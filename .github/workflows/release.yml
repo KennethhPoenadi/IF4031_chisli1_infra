@@ -1,0 +1,71 @@
+name: Release
+
+# dev:  triggered by the app repo (repository_dispatch, event_type deploy-dev) or by hand.
+# prod: by hand only. Copies the tags currently in dev, so prod never runs a version dev has not seen.
+on:
+  repository_dispatch:
+    types: [deploy-dev]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Environment to release
+        type: choice
+        options: [dev, prod]
+        default: prod
+      image_tag:
+        description: Image tag (commit SHA, 8 chars), required for dev
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release-dev:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'repository_dispatch' || inputs.target == 'dev')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: dev
+    concurrency:
+      group: xops-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set dev image tags
+        env:
+          IMAGE_TAG: ${{ github.event.client_payload.image_tag || inputs.image_tag }}
+          GITOPS_TOKEN: ${{ secrets.GITOPS_TOKEN }}
+        run: |
+          [[ "$IMAGE_TAG" =~ ^[0-9a-f]{7,40}$ ]] || { echo "ERROR: image_tag harus berupa SHA commit hex, dapat: '$IMAGE_TAG'" >&2; exit 1; }
+          bash ./scripts/set-tags.sh dev "$IMAGE_TAG"
+
+  # Add required reviewers to the `prod-release` environment (Settings → Environments) to get an
+  # approval gate. PROD_APPROVER (repository variable) additionally restricts who may run it.
+  release-prod:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.target == 'prod'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: prod-release
+    concurrency:
+      group: xops-release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check approver
+        env:
+          PROD_APPROVER: ${{ vars.PROD_APPROVER }}
+        run: |
+          if [ -z "${PROD_APPROVER:-}" ]; then
+            echo "ERROR: repository variable PROD_APPROVER belum diisi"; exit 1
+          fi
+          if [ "$GITHUB_ACTOR" != "$PROD_APPROVER" ]; then
+            echo "ERROR: hanya $PROD_APPROVER yang boleh menyetujui deploy ke prod"; exit 1
+          fi
+      - name: Promote dev tags to prod
+        env:
+          GITOPS_TOKEN: ${{ secrets.GITOPS_TOKEN }}
+        run: bash ./scripts/set-tags.sh prod

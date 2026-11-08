@@ -1,6 +1,6 @@
 # infra
 
-Konfigurasi infrastruktur dan deployment untuk platform agregasi informasi kebencanaan (tujuh service Go, MongoDB, RabbitMQ). Repositori ini berisi cluster Kubernetes (kind) yang ditulis sebagai Terraform, platform pendukungnya, chart Helm, konfigurasi dev dan prod, definisi Argo CD, policy Kyverno, dan pipeline yang menjalankan semuanya.
+Konfigurasi infrastruktur dan deployment untuk platform agregasi informasi kebencanaan (tujuh service Go, MongoDB, RabbitMQ). Repositori ini berisi cluster Kubernetes (kind) yang ditulis sebagai Terraform, platform pendukungnya, chart Helm, konfigurasi dev dan prod, definisi Argo CD, policy Kyverno, dan workflow GitHub Actions yang menjalankan semuanya.
 
 Kode aplikasi dan pipeline build image ada di repositori aplikasi. Dokumentasi lengkap (arsitektur, bukti, keterbatasan) ada di repositori `docs`.
 
@@ -23,7 +23,7 @@ Kode aplikasi dan pipeline build image ada di repositori aplikasi. Dokumentasi l
 ## Desain singkat
 
 - **GitOps, pull.** Pipeline hanya menulis ke Git. Argo CD di dalam cluster menarik konfigurasi dari repositori ini (`main`) dan menerapkannya dengan `prune` dan `selfHeal`, sehingga runner CI tidak memerlukan akses ke API server.
-- **Rilis adalah commit tag.** Pipeline aplikasi memicu pipeline repo ini dengan `IMAGE_TAG`. Job `release-dev` menulis `envs/dev/tags/<service>.yaml` lalu commit `[skip ci]`. Promosi ke prod dilakukan job manual `release-prod`, yang menyalin tag dari dev dan hanya berjalan sukses untuk akun `PROD_APPROVER`.
+- **Rilis adalah commit tag.** Workflow aplikasi mengirim `repository_dispatch` (`deploy-dev`) berisi `image_tag` ke repo ini. Job `release-dev` menulis `envs/dev/tags/<service>.yaml` lalu commit `[skip ci]`. Promosi ke prod dilakukan manual lewat workflow `Release` (`target: prod`), yang menyalin tag dari dev, menunggu persetujuan reviewer environment `prod-release`, dan hanya berjalan sukses untuk akun `PROD_APPROVER`.
 - **Satu chart untuk semua workload.** Perbedaan antar service dan environment hanya ada di `envs/`.
 - **Dua environment dalam satu cluster.** Namespace `dev` dan `prod`.
 - **Kyverno `Enforce`.** Pelanggaran ditolak saat admission, meskipun lolos CI.
@@ -42,7 +42,9 @@ Kode aplikasi dan pipeline build image ada di repositori aplikasi. Dokumentasi l
 
 `require-hpa` membaca daftar HPA lewat `apiCall`, sehingga Kyverno memerlukan ClusterRole `allow-hpa-read.yaml`. HPA diberi `sync-wave: "-1"` agar Argo CD membuatnya sebelum Deployment. Keberadaan HPA juga dicek di CI oleh `scripts/validate-hpa-coverage.sh`.
 
-## Pipeline
+## Workflow
+
+Didefinisikan di `.github/workflows/ci.yml` (validate dan platform) dan `.github/workflows/release.yml` (rilis dev dan prod).
 
 | Stage | Job | Fungsi |
 | --- | --- | --- |
@@ -51,25 +53,31 @@ Kode aplikasi dan pipeline build image ada di repositori aplikasi. Dokumentasi l
 | `cluster` | `cluster` | `terraform apply` untuk cluster kind |
 | `platform` | `platform` | Traefik, metrics-server, Kyverno, Argo CD, dan namespace `dev` dan `prod` |
 | `policies` | `policies` | Menerapkan policy, menunggu Ready, lalu menguji penolakan manifest pelanggaran di cluster |
-| `secrets` | `secrets-dev`, `secrets-prod` | Secret `gitlab-registry` dan `app-secrets` per namespace |
+| `secrets` | `secrets` (matriks `dev`, `prod`) | Secret `gitlab-registry` dan `app-secrets` per namespace |
 | `bootstrap` | `bootstrap-argocd` | Menerapkan `ApplicationSet` |
-| `release` | `release-dev` | Menulis tag dev, dipicu oleh pipeline aplikasi |
+| `release` | `release-dev` | Menulis tag dev, dipicu oleh workflow aplikasi |
 | `promote` | `release-prod` | Menyalin tag dev ke prod, manual |
 
-Push ke `main` menjalankan stage `validate` sampai `bootstrap`. Pipeline yang dipicu aplikasi hanya menjalankan `release-dev` dan `release-prod`. Job yang menyentuh cluster berjalan di runner lokal bertag `k8s-local`, karena API server kind hanya terbuka di `127.0.0.1`.
+Push ke `main` menjalankan `validate` sampai `bootstrap`; pull request hanya menjalankan `validate` (di runner GitHub). Workflow `Release` dipicu aplikasi atau manual. Job yang menyentuh cluster berjalan di self-hosted runner berlabel `k8s-local`, karena API server kind hanya terbuka di `127.0.0.1`. Pastikan `docker`, `kubectl`, `helm`, `terraform`, dan `kind` ada di `PATH` service runner (file `.path` di folder runner).
 
-## Variabel CI/CD
+## Secret, variable, dan environment
 
-Diisi di Settings → CI/CD → Variables project ini. Nilainya tidak disimpan di Git.
+Diisi di Settings → Secrets and variables → Actions. Nilainya tidak disimpan di Git.
 
-| Variabel | Fungsi |
+| Nama | Jenis | Fungsi |
+| --- | --- | --- |
+| `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | Secret | Mirror image database dan `imagePullSecret` di cluster |
+| `GITOPS_TOKEN` | Secret | Fine-grained PAT (Contents read/write pada repo ini): push commit tag dari `release-*` dan akses baca Argo CD |
+| `APP_IMAGE_NAME` | Variable | Nama repositori image aplikasi di Docker Hub |
+| `PROD_APPROVER` | Variable | Username GitHub penyetuju promosi ke prod |
+| Daftar di `scripts/secret-keys.txt` | Secret, per environment | Isi Secret `app-secrets`. Simpan sebagai environment secret di `dev` dan `prod`. Menambah key baru berarti menambahkannya juga ke job `secrets` di `ci.yml` |
+
+Environment (Settings → Environments):
+
+| Environment | Fungsi |
 | --- | --- |
-| `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` | Mirror image database dan `imagePullSecret` di cluster |
-| `APP_IMAGE_NAME` | Nama repositori image aplikasi di Docker Hub |
-| `GITOPS_TOKEN` | Push commit tag dari job `release-*` |
-| `PROD_APPROVER` | Username GitLab penyetuju promosi ke prod (scope environment `prod`) |
-| Daftar di `scripts/secret-keys.txt` | Isi Secret `app-secrets` |
-| `GITOPS_RUNNER_TAG` | Opsional, tag runner untuk job `release-*` |
+| `dev`, `prod` | Menyimpan secret per environment. Jangan beri required reviewers, karena job `secrets` memakainya di setiap push |
+| `prod-release` | Gerbang promosi. Beri required reviewers agar `release-prod` menunggu persetujuan |
 
 ## Menjalankan lokal
 

@@ -1,0 +1,13 @@
+name: Load runner environment
+description: Exports KUBECONFIG and the Terraform paths from scripts/env.sh to the following steps (the GitLab before_script equivalent).
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        source scripts/env.sh
+        {
+          echo "KUBECONFIG=$KUBECONFIG"
+          echo "TF_BACKEND_PATH=$TF_BACKEND_PATH"
+          echo "TF_PLUGIN_CACHE_DIR=$TF_PLUGIN_CACHE_DIR"
+        } >> "$GITHUB_ENV"
