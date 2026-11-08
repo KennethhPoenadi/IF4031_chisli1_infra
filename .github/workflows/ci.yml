@@ -95,9 +95,9 @@ jobs:
           kubectl get clusterpolicy
           ./scripts/test-kyverno-admission.sh
 
-  # One job per environment. The `dev` and `prod` GitHub environments hold that environment's
-  # secrets (everything listed in scripts/secret-keys.txt). Do not add required reviewers to them:
-  # that would block this job on every push. Promotion approval lives on `prod-release`.
+  # One job per environment. Application secrets are not stored in GitHub: they live in
+  # ~/.xops/<env>.env on the self-hosted runner (KEY=value lines, see scripts/secret-keys.txt, plus
+  # REGISTRY_USER and REGISTRY_PASS for the image pull secret). The file stays outside the repo.
   secrets:
     needs: [policies]
     runs-on: [self-hosted, k8s-local]
@@ -105,33 +105,16 @@ jobs:
       fail-fast: false
       matrix:
         env: [dev, prod]
-    environment: ${{ matrix.env }}
     concurrency:
       group: xops-cluster
       cancel-in-progress: false
-    env:
-      # Read-only pull credentials for the cluster (classic PAT, read:packages only).
-      REGISTRY_USER: ${{ vars.GHCR_PULL_USER || github.repository_owner }}
-      REGISTRY_PASS: ${{ secrets.GHCR_PULL_TOKEN }}
-      # Keep in sync with scripts/secret-keys.txt.
-      BMKG_API_KEY: ${{ secrets.BMKG_API_KEY }}
-      PVMBG_TOKEN: ${{ secrets.PVMBG_TOKEN }}
-      AUTH_SIGNING_SEED: ${{ secrets.AUTH_SIGNING_SEED }}
-      AUTH_INTERNAL_KEY: ${{ secrets.AUTH_INTERNAL_KEY }}
-      AUTH_CLIENT_MEDIA_ID: ${{ secrets.AUTH_CLIENT_MEDIA_ID }}
-      AUTH_CLIENT_MEDIA_SECRET: ${{ secrets.AUTH_CLIENT_MEDIA_SECRET }}
-      AUTH_CLIENT_FIELD_ID: ${{ secrets.AUTH_CLIENT_FIELD_ID }}
-      AUTH_CLIENT_FIELD_SECRET: ${{ secrets.AUTH_CLIENT_FIELD_SECRET }}
-      AUTH_CLIENT_OPS_ID: ${{ secrets.AUTH_CLIENT_OPS_ID }}
-      AUTH_CLIENT_OPS_SECRET: ${{ secrets.AUTH_CLIENT_OPS_SECRET }}
-      AGGREGATOR_API_KEY: ${{ secrets.AGGREGATOR_API_KEY }}
-      MONGO_ROOT_USERNAME: ${{ secrets.MONGO_ROOT_USERNAME }}
-      MONGO_ROOT_PASSWORD: ${{ secrets.MONGO_ROOT_PASSWORD }}
-      RABBITMQ_USER: ${{ secrets.RABBITMQ_USER }}
-      RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
-      - run: ./scripts/create-secrets.sh ${{ matrix.env }}
+      - name: Create secrets from the runner's env file
+        run: |
+          file="$HOME/.xops/${{ matrix.env }}.env"
+          [ -f "$file" ] || { echo "ERROR: $file tidak ditemukan di mesin runner" >&2; exit 1; }
+          ENV_FILE="$file" ./scripts/create-secrets.sh ${{ matrix.env }}
 
   bootstrap-argocd:
     needs: [secrets]

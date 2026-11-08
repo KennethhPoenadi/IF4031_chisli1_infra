@@ -66,26 +66,29 @@ Diisi di Settings → Secrets and variables → Actions. Nilainya tidak disimpan
 
 | Nama | Jenis | Fungsi |
 | --- | --- | --- |
-| `GHCR_PULL_TOKEN` | Secret | Classic PAT dengan **hanya** scope `read:packages`, dipakai kubelet untuk menarik image private (`imagePullSecret`) |
-| `GHCR_PULL_USER` | Variable | Pemilik token di atas. Opsional, default-nya pemilik repositori |
-| `GITOPS_TOKEN` | Secret | Fine-grained PAT (Contents read/write pada repo ini): push commit tag dari `release-*` dan akses baca Argo CD |
+| `GITOPS_TOKEN` | Secret | Fine-grained PAT (Contents read/write pada repo ini) untuk push commit tag dari `release-*` |
 | `APP_IMAGE_NAME` | Variable | Nama image di `ghcr.io/<owner>/`. Harus sama dengan yang dibangun repositori aplikasi |
 | `PROD_APPROVER` | Variable | Username GitHub penyetuju promosi ke prod |
-| Daftar di `scripts/secret-keys.txt` | Secret, per environment | Isi Secret `app-secrets`. Simpan sebagai environment secret di `dev` dan `prod`. Menambah key baru berarti menambahkannya juga ke job `secrets` di `ci.yml` |
 
-Environment (Settings → Environments):
+Environment (Settings → Environments): hanya `prod-release` yang perlu dibuat, dengan required reviewers sebagai gerbang promosi. Environment `dev` dibuat otomatis oleh GitHub saat `release-dev` pertama kali jalan.
 
-| Environment | Fungsi |
-| --- | --- |
-| `dev`, `prod` | Menyimpan secret per environment. Jangan beri required reviewers, karena job `secrets` memakainya di setiap push |
-| `prod-release` | Gerbang promosi. Beri required reviewers agar `release-prod` menunggu persetujuan |
+Secret aplikasi (daftar di `scripts/secret-keys.txt`) dan kredensial pull image **tidak** disimpan di GitHub. Simpan di mesin self-hosted runner, di luar repo:
+
+```
+~/.xops/dev.env
+~/.xops/prod.env
+```
+
+Isi kedua file sama bentuknya (nilai boleh beda): 15 baris `KEY=value` dari `secret-keys.txt`, ditambah `REGISTRY_USER=<username>` dan `REGISTRY_PASS=<classic PAT, hanya scope read:packages>`.
+
+File di-`source` oleh shell, jadi nilai dengan spasi atau karakter khusus perlu diberi kutip. Jalankan `chmod 600` pada keduanya.
 
 ## Registry (GHCR)
 
 Semua image berada di satu repositori, `ghcr.io/<owner>/<APP_IMAGE_NAME>` (nama selalu lowercase, dihitung `scripts/image-repo.sh`), dengan tag `<service>-<sha8>`.
 
 - **Push** dilakukan repositori aplikasi dengan `GITHUB_TOKEN` bawaan, tanpa kredensial yang disimpan.
-- **Pull** oleh cluster memakai Secret `registry-credentials` yang dibuat dari `GHCR_PULL_TOKEN`. Token ini hanya boleh punya scope `read:packages`. Package dibiarkan private.
+- **Pull** oleh cluster memakai Secret `registry-credentials` yang dibuat dari `REGISTRY_USER` dan `REGISTRY_PASS` di file env runner. Token ini hanya boleh punya scope `read:packages`. Package dibiarkan private.
 - **Mirror MongoDB dan RabbitMQ** menulis ke package yang sama dari repositori ini. Karena package dimiliki repositori aplikasi (yang membuatnya pertama), beri repositori `infra` akses **Write** sekali lewat Package settings → Manage Actions access. Sebelum itu job `mirror-images` gagal, dan itu ditoleransi.
 
 ## Menjalankan lokal
