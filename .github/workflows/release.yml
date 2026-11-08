@@ -34,7 +34,11 @@ jobs:
       group: xops-release
       cancel-in-progress: false
     steps:
+      # persist-credentials: false keeps checkout from leaving the read-only GITHUB_TOKEN in git config,
+      # which would override GITOPS_TOKEN in the push URL and make set-tags.sh push as github-actions[bot].
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Set dev image tags
         env:
           IMAGE_TAG: ${{ github.event.client_payload.image_tag || inputs.image_tag }}
@@ -54,7 +58,11 @@ jobs:
       group: xops-release
       cancel-in-progress: false
     steps:
+      # persist-credentials: false keeps checkout from leaving the read-only GITHUB_TOKEN in git config,
+      # which would override GITOPS_TOKEN in the push URL and make set-tags.sh push as github-actions[bot].
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Check approver
         env:
           PROD_APPROVER: ${{ vars.PROD_APPROVER }}
