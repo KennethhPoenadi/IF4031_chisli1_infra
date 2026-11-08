@@ -1,3 +1,5 @@
+role: api
+
 service:
   port: 8080
 

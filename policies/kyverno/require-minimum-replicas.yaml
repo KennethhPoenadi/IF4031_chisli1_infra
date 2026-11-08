@@ -10,7 +10,7 @@ spec:
         any:
           - resources:
               kinds: [Deployment, StatefulSet]
-              namespaces: [dev, prod]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
       validate:
         failureAction: Enforce
         message: Deployment and StatefulSet replicas must be at least one.
@@ -22,7 +22,7 @@ spec:
         any:
           - resources:
               kinds: [HorizontalPodAutoscaler]
-              namespaces: [dev, prod]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
       validate:
         failureAction: Enforce
         message: HPA minReplicas must be at least one.

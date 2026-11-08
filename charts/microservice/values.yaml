@@ -7,6 +7,9 @@ imagePullSecrets:
 
 kind: Deployment
 
+# nilai yang ok: aggregator, store, broker, consumer, api, mock, sensor, other.
+role: ""
+
 replicaCount: 1
 
 automountServiceAccountToken: false
@@ -25,6 +28,17 @@ topologySpread:
   topologyKey: kubernetes.io/hostname
   whenUnsatisfiable: ScheduleAnyway
 
+antiAffinity:
+  enabled: false
+  mode: required   # required | preferred
+  topologyKey: kubernetes.io/hostname
+
+terminationGracePeriodSeconds: 30
+preStopSleepSeconds: 5
+
+leaderElection:
+  enabled: false
+
 service:
   port: 8080
 
@@ -36,8 +50,18 @@ extraVolumes: []
 extraVolumeMounts: []
 
 resources:
-  requests: { cpu: 50m, memory: 64Mi }
-  limits: { cpu: 250m, memory: 128Mi }
+  requests: { cpu: 50m }
+  limits: { cpu: 250m }
+
+resourceClasses:
+  aggregator: { requests: { memory: 256Mi }, limits: { memory: 512Mi } }
+  store:      { requests: { memory: 512Mi }, limits: { memory: 1Gi } }
+  broker:     { requests: { memory: 512Mi }, limits: { memory: 1Gi } }
+  consumer:   { requests: { memory: 128Mi }, limits: { memory: 256Mi } }
+  api:        { requests: { memory: 128Mi }, limits: { memory: 256Mi } }
+  mock:       { requests: { memory: 64Mi },  limits: { memory: 128Mi } }
+  sensor:     { requests: { memory: 128Mi }, limits: { memory: 256Mi } }
+  other:      { requests: { memory: 128Mi }, limits: { memory: 256Mi } }
 
 podSecurityContext:
   runAsNonRoot: true
@@ -86,4 +110,5 @@ networkPolicy:
   ingressNamespace: traefik
   ingressController: false
   from: []
+  fromNamespaces: []
   to: []

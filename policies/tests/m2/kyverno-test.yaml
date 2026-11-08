@@ -1,0 +1,97 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: xops-m2-contract
+policies:
+  - ../../kyverno/require-role-label.yaml
+  - ../../kyverno/enforce-resource-class.yaml
+  - ../../kyverno/store-local-storage.yaml
+  - ../../kyverno/forbid-privileged.yaml
+resources:
+  - resources.yaml
+results:
+  - policy: require-role-label
+    rule: require-valid-role-label
+    resources: [role-api-ok]
+    kind: Pod
+    result: pass
+  - policy: require-role-label
+    rule: require-valid-role-label
+    resources: [role-missing]
+    kind: Pod
+    result: fail
+  - policy: require-role-label
+    rule: require-valid-role-label
+    resources: [role-invalid]
+    kind: Pod
+    result: fail
+  - policy: enforce-resource-class
+    rule: memory-class-api
+    resources: [role-api-ok]
+    kind: Pod
+    result: pass
+  - policy: enforce-resource-class
+    rule: memory-class-aggregator
+    resources: [agg-ok]
+    kind: Pod
+    result: pass
+  - policy: enforce-resource-class
+    rule: memory-class-aggregator
+    resources: [agg-bad-memory]
+    kind: Pod
+    result: fail
+  - policy: enforce-resource-class
+    rule: memory-class-mock
+    resources: [mock-ok]
+    kind: Pod
+    result: pass
+  - policy: enforce-resource-class
+    rule: memory-class-store
+    resources: [store-ok]
+    kind: Pod
+    result: pass
+  - policy: store-local-storage
+    rule: store-no-network-volumes
+    resources: [store-ok]
+    kind: Pod
+    result: pass
+  - policy: store-local-storage
+    rule: store-no-network-volumes
+    resources: [store-nfs]
+    kind: Pod
+    result: fail
+  - policy: store-local-storage
+    rule: store-local-storage-class
+    resources: [sts-default-class]
+    kind: StatefulSet
+    result: pass
+  - policy: store-local-storage
+    rule: store-local-storage-class
+    resources: [sts-local-path]
+    kind: StatefulSet
+    result: pass
+  - policy: store-local-storage
+    rule: store-local-storage-class
+    resources: [sts-network-class]
+    kind: StatefulSet
+    result: fail
+  - policy: forbid-privileged
+    rule: forbid-privileged-containers
+    resources: [role-api-ok]
+    kind: Pod
+    result: pass
+  - policy: forbid-privileged
+    rule: forbid-privileged-containers
+    resources: [priv-bad]
+    kind: Pod
+    result: fail
+  - policy: forbid-privileged
+    rule: forbid-host-namespaces
+    resources: [role-api-ok]
+    kind: Pod
+    result: pass
+  - policy: forbid-privileged
+    rule: forbid-host-namespaces
+    resources: [hostnet-bad]
+    kind: Pod
+    result: fail

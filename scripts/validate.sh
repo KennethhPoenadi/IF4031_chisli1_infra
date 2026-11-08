@@ -15,6 +15,8 @@ if [ -f charts/microservice/Chart.yaml ]; then
     helm lint charts/microservice
     echo "==> validasi cakupan HPA"
     bash ./scripts/validate-hpa-coverage.sh
+    echo "==> kontrak M2 (role, resource class, spread, storage, Tester Agent)"
+    python3 ./scripts/contract-check.py
     if command -v kubeconform >/dev/null; then
       echo "==> kubeconform"
       ./scripts/render-all.sh | kubeconform -strict -ignore-missing-schemas -summary

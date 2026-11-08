@@ -1,3 +1,5 @@
+role: broker
+
 kind: StatefulSet
 replicaCount: 1
 
@@ -21,8 +23,8 @@ persistence:
   mountPath: /var/lib/rabbitmq
 
 resources:
-  requests: { cpu: 100m, memory: 256Mi }
-  limits: { cpu: 500m, memory: 512Mi }
+  requests: { cpu: 100m }
+  limits: { cpu: 500m }
 
 extraEnv:
   - name: RABBITMQ_DEFAULT_USER

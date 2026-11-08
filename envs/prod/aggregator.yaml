@@ -1,5 +1,16 @@
+role: aggregator
+
 service:
   port: 8090
+
+# Kontrak M2: minimal 3 instance di node berbeda. maxReplicas 5 mengikuti skenario load test 3 -> 5.
+autoscaling:
+  minReplicas: 3
+  maxReplicas: 5
+topologySpread:
+  whenUnsatisfiable: DoNotSchedule
+leaderElection:
+  enabled: true
 
 env:
   AGGREGATOR_PORT: "8090"

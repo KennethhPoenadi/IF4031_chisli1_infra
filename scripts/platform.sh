@@ -39,8 +39,8 @@ helm upgrade --install argocd argo/argo-cd \
   -n argocd --create-namespace --version "$ARGOCD_VERSION" \
   -f platform/argocd-values.yaml --wait --timeout 8m
 
-echo "==> Namespace dev & prod"
-for ns in dev prod; do
+echo "==> Namespace dev dan $APP_NAMESPACE"
+for ns in dev "$APP_NAMESPACE"; do
   kubectl create namespace "$ns" --dry-run=client -o yaml | kubectl apply -f -
 done
 

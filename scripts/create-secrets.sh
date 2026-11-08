@@ -3,12 +3,13 @@ cd "$(dirname "$0")/.."
 source scripts/env.sh
 
 ENV_NAME="${1:?usage: create-secrets.sh <dev|prod>}"
+NAMESPACE="$(ns_for "$ENV_NAME")"
 
 if [ -n "${ENV_FILE:-}" ]; then
   set -a; source "$ENV_FILE"; set +a
 fi
 
-kubectl create namespace "$ENV_NAME" --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
 # Pull credentials for the image registry. Use a read-only token (GHCR: classic PAT with only read:packages).
 : "${REGISTRY_SERVER:=ghcr.io}"
@@ -21,7 +22,7 @@ kubectl create secret docker-registry registry-credentials \
   --docker-server="$REGISTRY_SERVER" \
   --docker-username="$REGISTRY_USER" \
   --docker-password="$REGISTRY_PASS" \
-  -n "$ENV_NAME" --dry-run=client -o yaml | kubectl apply -f -
+  -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
 args=()
 missing=()
@@ -40,6 +41,6 @@ if [ ${#missing[@]} -gt 0 ]; then
 fi
 
 kubectl create secret generic app-secrets "${args[@]}" \
-  -n "$ENV_NAME" --dry-run=client -o yaml | kubectl apply -f -
+  -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
-echo "Secret registry-credentials dan app-secrets siap di namespace $ENV_NAME"
+echo "Secret registry-credentials dan app-secrets siap di namespace $NAMESPACE (environment $ENV_NAME)"

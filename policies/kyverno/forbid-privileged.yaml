@@ -1,0 +1,40 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: forbid-privileged
+  annotations:
+    policies.kyverno.io/title: Forbid Privileged Pods In Application Namespaces
+    policies.kyverno.io/description: >-
+      Pod aplikasi tidak boleh privileged atau memakai jaringan dan PID host. Tester Agent berada di
+      namespace tersendiri yang sengaja tidak tercakup policy ini, karena manifestnya meminta hak istimewa.
+spec:
+  background: true
+  rules:
+    - name: forbid-privileged-containers
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
+      validate:
+        failureAction: Enforce
+        message: "Container tidak boleh privileged di namespace aplikasi."
+        foreach:
+          - list: request.object.spec.containers
+            pattern:
+              =(securityContext):
+                =(privileged): "false"
+    - name: forbid-host-namespaces
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
+      validate:
+        failureAction: Enforce
+        message: "Pod aplikasi tidak boleh memakai hostNetwork, hostPID, atau hostIPC."
+        pattern:
+          spec:
+            =(hostNetwork): "false"
+            =(hostPID): "false"
+            =(hostIPC): "false"

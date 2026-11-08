@@ -12,7 +12,7 @@ spec:
         any:
           - resources:
               kinds: [Pod]
-              namespaces: [dev, prod]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
       validate:
         failureAction: Enforce
         message: Every container must set runAsNonRoot to true.
@@ -30,7 +30,7 @@ spec:
         any:
           - resources:
               kinds: [Pod]
-              namespaces: [dev, prod]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
       validate:
         failureAction: Enforce
         message: Every container must set readOnlyRootFilesystem to true.
@@ -48,7 +48,7 @@ spec:
         any:
           - resources:
               kinds: [Pod]
-              namespaces: [dev, prod]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
       validate:
         failureAction: Enforce
         message: Every container must set allowPrivilegeEscalation to false.

@@ -2,9 +2,35 @@
 {{- .Release.Name -}}
 {{- end -}}
 
+{{- /* Kontrak M2: label `role` wajib dan hanya boleh bernilai salah satu dari delapan kelas. */ -}}
+{{- define "microservice.role" -}}
+{{- $roles := list "aggregator" "store" "broker" "consumer" "api" "mock" "sensor" "other" -}}
+{{- $role := required "role wajib diisi (aggregator|store|broker|consumer|api|mock|sensor|other)" .Values.role -}}
+{{- if not (has $role $roles) -}}
+{{- fail (printf "role '%s' tidak sah, pilih salah satu: %s" $role (join ", " $roles)) -}}
+{{- end -}}
+{{- $role -}}
+{{- end -}}
+
+{{- /* CPU dari values, memori dari kelas role (Lampiran B). */ -}}
+{{- define "microservice.resources" -}}
+{{- $class := index .Values.resourceClasses (include "microservice.role" .) -}}
+requests:
+  {{- with .Values.resources.requests.cpu }}
+  cpu: {{ . }}
+  {{- end }}
+  memory: {{ $class.requests.memory }}
+limits:
+  {{- with .Values.resources.limits.cpu }}
+  cpu: {{ . }}
+  {{- end }}
+  memory: {{ $class.limits.memory }}
+{{- end -}}
+
 {{- define "microservice.labels" -}}
 app.kubernetes.io/name: {{ include "microservice.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
+role: {{ include "microservice.role" . }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
 {{- end -}}
@@ -18,10 +44,36 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 metadata:
   labels:
     {{- include "microservice.selectorLabels" . | nindent 4 }}
+    role: {{ include "microservice.role" . }}
   annotations:
     checksum/config: {{ toYaml .Values.env | sha256sum }}
 spec:
+  {{- if .Values.leaderElection.enabled }}
+  serviceAccountName: {{ include "microservice.name" . }}
+  automountServiceAccountToken: true
+  {{- else }}
   automountServiceAccountToken: {{ .Values.automountServiceAccountToken }}
+  {{- end }}
+  terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+  {{- if .Values.antiAffinity.enabled }}
+  affinity:
+    podAntiAffinity:
+      {{- if eq .Values.antiAffinity.mode "required" }}
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - topologyKey: {{ .Values.antiAffinity.topologyKey }}
+          labelSelector:
+            matchLabels:
+              {{- include "microservice.selectorLabels" . | nindent 14 }}
+      {{- else }}
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            topologyKey: {{ .Values.antiAffinity.topologyKey }}
+            labelSelector:
+              matchLabels:
+                {{- include "microservice.selectorLabels" . | nindent 16 }}
+      {{- end }}
+  {{- end }}
   {{- if .Values.topologySpread.enabled }}
   topologySpreadConstraints:
     - maxSkew: {{ .Values.topologySpread.maxSkew }}
@@ -50,10 +102,20 @@ spec:
       ports:
         - name: http
           containerPort: {{ .Values.service.port }}
-      {{- with .Values.extraEnv }}
       env:
+        # Audit API (Lampiran A) menyebut nama node seperti pada `kubectl get nodes`.
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef: { fieldPath: spec.nodeName }
+        - name: POD_NAME
+          valueFrom:
+            fieldRef: { fieldPath: metadata.name }
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef: { fieldPath: metadata.namespace }
+        {{- with .Values.extraEnv }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       {{- if or .Values.env .Values.secretRefs }}
       envFrom:
         {{- if .Values.env }}
@@ -66,7 +128,13 @@ spec:
         {{- end }}
       {{- end }}
       resources:
-        {{- toYaml .Values.resources | nindent 8 }}
+        {{- include "microservice.resources" . | nindent 8 }}
+      {{- if gt (int .Values.preStopSleepSeconds) 0 }}
+      lifecycle:
+        preStop:
+          sleep:
+            seconds: {{ .Values.preStopSleepSeconds }}
+      {{- end }}
       livenessProbe:
         {{- toYaml .Values.livenessProbe | nindent 8 }}
       readinessProbe:

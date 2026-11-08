@@ -1,3 +1,5 @@
+role: mock
+
 service:
   port: 8081
 
@@ -11,4 +13,6 @@ env:
 secretRefs: [app-secrets]
 networkPolicy:
   from: [aggregator]
+  # Tester Agent memanggil endpoint admin mock dari namespace tester-agent.
+  fromNamespaces: [tester-agent]
   to: []

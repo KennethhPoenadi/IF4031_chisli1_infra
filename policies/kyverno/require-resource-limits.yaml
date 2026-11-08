@@ -10,7 +10,7 @@ spec:
         any:
           - resources:
               kinds: [Pod]
-              namespaces: [dev, prod]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
       validate:
         failureAction: Enforce
         message: Every container must define CPU and memory limits.

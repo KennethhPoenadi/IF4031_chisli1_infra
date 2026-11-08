@@ -1,3 +1,5 @@
+role: consumer
+
 service:
   port: 8093
 

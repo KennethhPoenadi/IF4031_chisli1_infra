@@ -10,7 +10,7 @@ spec:
         any:
           - resources:
               kinds: [Pod]
-              namespaces: [dev, prod]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
       validate:
         failureAction: Enforce
         message: Workloads must use a versioned image tag; tags ending in latest (for example :latest or <service>-latest) are not allowed.

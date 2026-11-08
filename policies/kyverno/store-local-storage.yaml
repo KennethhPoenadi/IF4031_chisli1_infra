@@ -1,0 +1,48 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: store-local-storage
+  annotations:
+    policies.kyverno.io/title: Store Data On Local Node Disk
+    policies.kyverno.io/description: >-
+      Kontrak M2: data role=store wajib berada di disk node tempat pod berjalan (local PV atau hostPath),
+      bukan storage jaringan, agar kehilangan node dapat diuji.
+spec:
+  background: false
+  rules:
+    - name: store-no-network-volumes
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
+              selector:
+                matchLabels:
+                  role: store
+      validate:
+        failureAction: Enforce
+        message: "Pod role=store tidak boleh memakai volume jaringan (nfs, csi, cephfs, glusterfs, iscsi, rbd, atau disk cloud)."
+        deny:
+          conditions:
+            any:
+              - key: "{{ request.object.spec.volumes[?nfs || csi || cephfs || glusterfs || iscsi || rbd || awsElasticBlockStore || azureDisk || azureFile || gcePersistentDisk] | length(@) }}"
+                operator: GreaterThan
+                value: 0
+    - name: store-local-storage-class
+      match:
+        any:
+          - resources:
+              kinds: [StatefulSet]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
+              selector:
+                matchLabels:
+                  role: store
+      validate:
+        failureAction: Enforce
+        message: "StatefulSet role=store hanya boleh memakai StorageClass local-path atau standard (disk lokal node), atau bawaan cluster."
+        deny:
+          conditions:
+            any:
+              - key: "{{ request.object.spec.volumeClaimTemplates[?spec.storageClassName && spec.storageClassName != 'local-path' && spec.storageClassName != 'standard'] | length(@) }}"
+                operator: GreaterThan
+                value: 0

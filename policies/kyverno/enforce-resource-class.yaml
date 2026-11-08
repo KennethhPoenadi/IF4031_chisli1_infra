@@ -1,0 +1,172 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: enforce-resource-class
+  annotations:
+    policies.kyverno.io/title: Enforce Resource Class
+    policies.kyverno.io/description: >-
+      Kontrak M2 (Lampiran B): memori requests dan limits ditentukan oleh role, agar pengukuran antar
+      kelompok sebanding.
+spec:
+  background: true
+  rules:
+    - name: memory-class-aggregator
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
+              selector:
+                matchLabels:
+                  role: aggregator
+      validate:
+        failureAction: Enforce
+        message: "Pod role=aggregator wajib memakai memori requests 256Mi dan limits 512Mi (Lampiran B)."
+        foreach:
+          - list: request.object.spec.containers
+            pattern:
+              resources:
+                requests:
+                  memory: "256Mi"
+                limits:
+                  memory: "512Mi"
+    - name: memory-class-store
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
+              selector:
+                matchLabels:
+                  role: store
+      validate:
+        failureAction: Enforce
+        message: "Pod role=store wajib memakai memori requests 512Mi dan limits 1Gi (Lampiran B)."
+        foreach:
+          - list: request.object.spec.containers
+            pattern:
+              resources:
+                requests:
+                  memory: "512Mi"
+                limits:
+                  memory: "1Gi"
+    - name: memory-class-broker
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
+              selector:
+                matchLabels:
+                  role: broker
+      validate:
+        failureAction: Enforce
+        message: "Pod role=broker wajib memakai memori requests 512Mi dan limits 1Gi (Lampiran B)."
+        foreach:
+          - list: request.object.spec.containers
+            pattern:
+              resources:
+                requests:
+                  memory: "512Mi"
+                limits:
+                  memory: "1Gi"
+    - name: memory-class-consumer
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
+              selector:
+                matchLabels:
+                  role: consumer
+      validate:
+        failureAction: Enforce
+        message: "Pod role=consumer wajib memakai memori requests 128Mi dan limits 256Mi (Lampiran B)."
+        foreach:
+          - list: request.object.spec.containers
+            pattern:
+              resources:
+                requests:
+                  memory: "128Mi"
+                limits:
+                  memory: "256Mi"
+    - name: memory-class-api
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
+              selector:
+                matchLabels:
+                  role: api
+      validate:
+        failureAction: Enforce
+        message: "Pod role=api wajib memakai memori requests 128Mi dan limits 256Mi (Lampiran B)."
+        foreach:
+          - list: request.object.spec.containers
+            pattern:
+              resources:
+                requests:
+                  memory: "128Mi"
+                limits:
+                  memory: "256Mi"
+    - name: memory-class-mock
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
+              selector:
+                matchLabels:
+                  role: mock
+      validate:
+        failureAction: Enforce
+        message: "Pod role=mock wajib memakai memori requests 64Mi dan limits 128Mi (Lampiran B)."
+        foreach:
+          - list: request.object.spec.containers
+            pattern:
+              resources:
+                requests:
+                  memory: "64Mi"
+                limits:
+                  memory: "128Mi"
+    - name: memory-class-sensor
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
+              selector:
+                matchLabels:
+                  role: sensor
+      validate:
+        failureAction: Enforce
+        message: "Pod role=sensor wajib memakai memori requests 128Mi dan limits 256Mi (Lampiran B)."
+        foreach:
+          - list: request.object.spec.containers
+            pattern:
+              resources:
+                requests:
+                  memory: "128Mi"
+                limits:
+                  memory: "256Mi"
+    - name: memory-class-other
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
+              selector:
+                matchLabels:
+                  role: other
+      validate:
+        failureAction: Enforce
+        message: "Pod role=other wajib memakai memori requests 128Mi dan limits 256Mi (Lampiran B)."
+        foreach:
+          - list: request.object.spec.containers
+            pattern:
+              resources:
+                requests:
+                  memory: "128Mi"
+                limits:
+                  memory: "256Mi"

@@ -1,3 +1,5 @@
+role: store
+
 kind: StatefulSet
 replicaCount: 1
 
@@ -30,8 +32,8 @@ extraVolumeMounts:
 args: [mongod, --wiredTigerCacheSizeGB=0.25]
 
 resources:
-  requests: { cpu: 100m, memory: 256Mi }
-  limits: { cpu: 500m, memory: 512Mi }
+  requests: { cpu: 100m }
+  limits: { cpu: 500m }
 
 extraEnv:
   - name: MONGO_INITDB_ROOT_USERNAME

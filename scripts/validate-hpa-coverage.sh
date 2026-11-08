@@ -2,13 +2,14 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+source scripts/env.sh
 
 checked=0
 for env_name in dev prod; do
   for values_file in "envs/$env_name"/*.yaml; do
     service="$(basename "$values_file" .yaml)"
     rendered="$(helm template "$service" charts/microservice \
-      --namespace "$env_name" \
+      --namespace "$(ns_for "$env_name")" \
       --values "$values_file" \
       --set image.repository=validate/app \
       --set "image.tag=$service-validate")"

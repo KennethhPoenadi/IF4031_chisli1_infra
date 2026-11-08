@@ -10,13 +10,18 @@ spec:
     matchLabels:
       {{- include "microservice.selectorLabels" . | nindent 6 }}
   policyTypes: [Ingress, Egress]
-  {{- if or .Values.networkPolicy.ingressController .Values.networkPolicy.from }}
+  {{- if or .Values.networkPolicy.ingressController .Values.networkPolicy.from .Values.networkPolicy.fromNamespaces }}
   ingress:
     - from:
         {{- if .Values.networkPolicy.ingressController }}
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: {{ .Values.networkPolicy.ingressNamespace }}
+        {{- end }}
+        {{- range .Values.networkPolicy.fromNamespaces }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . }}
         {{- end }}
         {{- range .Values.networkPolicy.from }}
         - podSelector:

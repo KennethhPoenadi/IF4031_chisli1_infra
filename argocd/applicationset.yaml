@@ -12,7 +12,9 @@ spec:
           - list:
               elements:
                 - env: dev
+                  namespace: dev
                 - env: prod
+                  namespace: sistem-informasi-kebencanaan-bnpb
           - list:
               elements:
                 - svc: mongo
@@ -44,7 +46,7 @@ spec:
               value: __IMAGE_REPO__
       destination:
         server: https://kubernetes.default.svc
-        namespace: '{{.env}}'
+        namespace: '{{.namespace}}'
       syncPolicy:
         automated:
           prune: true

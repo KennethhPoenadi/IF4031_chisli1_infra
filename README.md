@@ -25,8 +25,21 @@ Kode aplikasi dan pipeline build image ada di repositori aplikasi. Dokumentasi l
 - **GitOps, pull.** Pipeline hanya menulis ke Git. Argo CD di dalam cluster menarik konfigurasi dari repositori ini (`main`) dan menerapkannya dengan `prune` dan `selfHeal`, sehingga runner CI tidak memerlukan akses ke API server.
 - **Rilis adalah commit tag.** Workflow aplikasi mengirim `repository_dispatch` (`deploy-dev`) berisi `image_tag` ke repo ini. Job `release-dev` menulis `envs/dev/tags/<service>.yaml` lalu commit `[skip ci]`. Promosi ke prod dilakukan manual lewat workflow `Release` (`target: prod`), yang menyalin tag dari dev, menunggu persetujuan reviewer environment `prod-release`, dan hanya berjalan sukses untuk akun `PROD_APPROVER`.
 - **Satu chart untuk semua workload.** Perbedaan antar service dan environment hanya ada di `envs/`.
-- **Dua environment dalam satu cluster.** Namespace `dev` dan `prod`.
+- **Dua environment.** `dev` memakai namespace `dev`. `prod` memakai namespace kontrak M2, `sistem-informasi-kebencanaan-bnpb` (dipetakan oleh `ns_for` di `scripts/env.sh` dan oleh `argocd/applicationset.yaml`). Untuk demo, hanya environment `prod` yang perlu berjalan.
 - **Kyverno `Enforce`.** Pelanggaran ditolak saat admission, meskipun lolos CI.
+
+### Kontrak Milestone 2
+
+| Aturan | Ditegakkan oleh |
+| --- | --- |
+| Setiap pod berlabel `role` (aggregator, store, broker, consumer, api, mock, sensor, other) | Chart (`role` wajib di `envs/`), policy `require-role-label` |
+| Memori requests dan limits mengikuti kelas role (Lampiran B). CPU bebas | Chart (`resourceClasses`), policy `enforce-resource-class` |
+| Data `role=store` di disk lokal node, bukan storage jaringan | Policy `store-local-storage` |
+| Pod aplikasi tidak privileged dan tidak memakai jaringan atau PID host | Policy `forbid-privileged` |
+| Aggregator minimal 3 instance di node berbeda | `envs/*/aggregator.yaml` (HPA 3 sampai 5, `DoNotSchedule`) |
+| Tester Agent tidak dihalangi | Policy hanya mencakup namespace aplikasi. Mock menerima trafik dari namespace `tester-agent` |
+
+`scripts/contract-check.py` (dipanggil `scripts/validate.sh`) me-render semua service dan memeriksa aturan di atas. `scripts/install-tester-agent.sh` memasang Tester Agent dari manifest yang di-pin dan menolak bila digest image berbeda. Namespace aplikasi harus ada lebih dulu, karena manifest Tester Agent membuat Role di dalamnya (`scripts/platform.sh` membuatnya).
 
 ### Policy Kyverno
 
