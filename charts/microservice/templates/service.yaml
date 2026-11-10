@@ -6,6 +6,12 @@ metadata:
     {{- include "microservice.labels" . | nindent 4 }}
 spec:
   type: ClusterIP
+  {{- if .Values.service.headless }}
+  # Headless: setiap pod StatefulSet punya DNS sendiri (<pod>.<service>), dipakai agar aggregator
+  # dapat menjangkau unit store tertentu. publishNotReadyAddresses menjaga DNS tetap ada saat pod belum siap.
+  clusterIP: None
+  publishNotReadyAddresses: true
+  {{- end }}
   selector:
     {{- include "microservice.selectorLabels" . | nindent 4 }}
   ports:

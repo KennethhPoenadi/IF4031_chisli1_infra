@@ -39,8 +39,14 @@ preStopSleepSeconds: 5
 leaderElection:
   enabled: false
 
+# Izin membaca (get) pod di namespace sendiri, untuk mengetahui node tempat pod lain berjalan.
+# Dipakai aggregator agar Audit API dapat menyebut nama node setiap unit store.
+podReader:
+  enabled: false
+
 service:
   port: 8080
+  headless: false
 
 env: {}
 secretRefs: []

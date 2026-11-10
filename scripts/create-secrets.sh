@@ -28,9 +28,12 @@ args=()
 missing=()
 while read -r key; do
   [[ -z "$key" || "$key" == \#* ]] && continue
+  # key berakhiran `?` bersifat opsional: dipakai bila terisi, dilewati diam-diam bila kosong
+  optional=false
+  if [[ "$key" == *\? ]]; then optional=true; key="${key%\?}"; fi
   if [ -n "${!key:-}" ]; then
     args+=("--from-literal=$key=${!key}")
-  else
+  elif [ "$optional" = false ]; then
     missing+=("$key")
   fi
 done < scripts/secret-keys.txt

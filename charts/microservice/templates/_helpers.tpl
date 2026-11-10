@@ -48,7 +48,7 @@ metadata:
   annotations:
     checksum/config: {{ toYaml .Values.env | sha256sum }}
 spec:
-  {{- if .Values.leaderElection.enabled }}
+  {{- if or .Values.leaderElection.enabled .Values.podReader.enabled }}
   serviceAccountName: {{ include "microservice.name" . }}
   automountServiceAccountToken: true
   {{- else }}

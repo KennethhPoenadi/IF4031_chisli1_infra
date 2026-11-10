@@ -1,4 +1,4 @@
-{{- if .Values.leaderElection.enabled }}
+{{- if or .Values.leaderElection.enabled .Values.podReader.enabled }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -9,24 +9,31 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ include "microservice.name" . }}-leader-election
+  name: {{ include "microservice.name" . }}-access
   labels:
     {{- include "microservice.labels" . | nindent 4 }}
 rules:
+  {{- if .Values.leaderElection.enabled }}
   - apiGroups: [coordination.k8s.io]
     resources: [leases]
     verbs: [get, list, watch, create, update, patch]
+  {{- end }}
+  {{- if .Values.podReader.enabled }}
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get]
+  {{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "microservice.name" . }}-leader-election
+  name: {{ include "microservice.name" . }}-access
   labels:
     {{- include "microservice.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: {{ include "microservice.name" . }}-leader-election
+  name: {{ include "microservice.name" . }}-access
 subjects:
   - kind: ServiceAccount
     name: {{ include "microservice.name" . }}
