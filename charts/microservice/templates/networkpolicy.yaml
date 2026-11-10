@@ -10,8 +10,10 @@ spec:
     matchLabels:
       {{- include "microservice.selectorLabels" . | nindent 6 }}
   policyTypes: [Ingress, Egress]
-  {{- if or .Values.networkPolicy.ingressController .Values.networkPolicy.from .Values.networkPolicy.fromNamespaces }}
+  {{- $appIngress := or .Values.networkPolicy.ingressController .Values.networkPolicy.from .Values.networkPolicy.fromNamespaces }}
+  {{- if or $appIngress .Values.telemetry.enabled }}
   ingress:
+    {{- if $appIngress }}
     - from:
         {{- if .Values.networkPolicy.ingressController }}
         - namespaceSelector:
@@ -31,6 +33,17 @@ spec:
       ports:
         - protocol: TCP
           port: {{ $.Values.service.port }}
+    {{- end }}
+    {{- if .Values.telemetry.enabled }}
+    # Prometheus (namespace observability) mengambil metrik dari port metrik, bukan dari port aplikasi.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.telemetry.namespace }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.telemetry.metricsPort }}
+    {{- end }}
   {{- else }}
   ingress: []
   {{- end }}
@@ -47,6 +60,16 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+    {{- if .Values.telemetry.enabled }}
+    # Trace dikirim ke kolektor OTLP (Alloy) di namespace observability.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.telemetry.namespace }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.telemetry.otlpPort }}
+    {{- end }}
     {{- if .Values.networkPolicy.to }}
     - to:
         {{- range .Values.networkPolicy.to }}

@@ -39,6 +39,17 @@ preStopSleepSeconds: 5
 leaderElection:
   enabled: false
 
+# Observabilitas: trace (OTLP ke Alloy), metrik (Prometheus scrape ke port ini), dan log (dibaca Alloy dari stdout).
+# Nonaktifkan untuk image pihak ketiga yang tidak memakai modul telemetry (mongo, rabbitmq).
+telemetry:
+  enabled: true
+  metricsPort: 9102
+  namespace: observability
+  otlpEndpoint: http://alloy.observability.svc:4318
+  otlpPort: 4318
+  # Rasio sampling trace 0..1. Turunkan (mis. "0.1") saat load test besar agar kolektor tidak kewalahan.
+  traceSampleRatio: "1"
+
 # Izin membaca (get) pod di namespace sendiri, untuk mengetahui node tempat pod lain berjalan.
 # Dipakai aggregator agar Audit API dapat menyebut nama node setiap unit store.
 podReader:

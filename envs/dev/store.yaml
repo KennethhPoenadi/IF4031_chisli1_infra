@@ -61,3 +61,7 @@ networkPolicy:
   to: []
 pdb:
   enabled: false
+
+# Image pihak ketiga: tidak memakai modul telemetry, jadi tidak ada port metrik dan trace.
+telemetry:
+  enabled: false

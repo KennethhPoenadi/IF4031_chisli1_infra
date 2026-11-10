@@ -47,6 +47,11 @@ metadata:
     role: {{ include "microservice.role" . }}
   annotations:
     checksum/config: {{ toYaml .Values.env | sha256sum }}
+    {{- if .Values.telemetry.enabled }}
+    prometheus.io/scrape: "true"
+    prometheus.io/port: {{ .Values.telemetry.metricsPort | quote }}
+    prometheus.io/path: /metrics
+    {{- end }}
 spec:
   {{- if or .Values.leaderElection.enabled .Values.podReader.enabled }}
   serviceAccountName: {{ include "microservice.name" . }}
@@ -102,6 +107,10 @@ spec:
       ports:
         - name: http
           containerPort: {{ .Values.service.port }}
+        {{- if .Values.telemetry.enabled }}
+        - name: metrics
+          containerPort: {{ .Values.telemetry.metricsPort }}
+        {{- end }}
       env:
         # Audit API (Lampiran A) menyebut nama node seperti pada `kubectl get nodes`.
         - name: NODE_NAME
@@ -113,6 +122,14 @@ spec:
         - name: POD_NAMESPACE
           valueFrom:
             fieldRef: { fieldPath: metadata.namespace }
+        {{- if .Values.telemetry.enabled }}
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: {{ .Values.telemetry.otlpEndpoint | quote }}
+        - name: OTEL_TRACES_SAMPLER_ARG
+          value: {{ .Values.telemetry.traceSampleRatio | quote }}
+        - name: TELEMETRY_METRICS_ADDR
+          value: {{ printf ":%v" .Values.telemetry.metricsPort | quote }}
+        {{- end }}
         {{- with .Values.extraEnv }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

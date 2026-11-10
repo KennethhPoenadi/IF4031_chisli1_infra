@@ -69,3 +69,7 @@ topologySpread:
 pdb:
   enabled: true
   minAvailable: 2
+
+# Image pihak ketiga: tidak memakai modul telemetry, jadi tidak ada port metrik dan trace.
+telemetry:
+  enabled: false
