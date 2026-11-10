@@ -17,7 +17,7 @@ spec:
                   namespace: sistem-informasi-kebencanaan-bnpb
           - list:
               elements:
-                - svc: mongo
+                - svc: store
                 - svc: rabbitmq
                 - svc: auth-service
                 - svc: bmkg-mock

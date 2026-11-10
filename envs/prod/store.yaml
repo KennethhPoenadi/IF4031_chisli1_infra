@@ -1,13 +1,16 @@
 role: store
 
 kind: StatefulSet
-replicaCount: 1
+# Satu unit penyimpanan = satu pod MongoDB mandiri. Aggregator menyebarkan data ke seluruh unit dengan
+# consistent hashing dan menyimpan dua salinan per event (RF=2), jadi dev cukup satu unit dan prod tiga unit.
+replicaCount: 3
 
 image:
   tag: mongo-7
 
 service:
   port: 27017
+  headless: true   # store-0.store, store-1.store, ... dipakai aggregator
 
 autoscaling:
   enabled: false
@@ -56,5 +59,13 @@ readinessProbe:
 networkPolicy:
   from: [aggregator]
   to: []
+# Replika store tidak boleh berbagi node. `preferred` dipakai selama cluster belum punya >=3 node;
+# ganti ke `required` setelah cluster multi-node siap agar satu node tidak pernah memegang dua unit.
+antiAffinity:
+  enabled: true
+  mode: preferred
+topologySpread:
+  whenUnsatisfiable: DoNotSchedule
 pdb:
-  enabled: false
+  enabled: true
+  minAvailable: 2

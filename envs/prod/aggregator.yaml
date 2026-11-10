@@ -3,6 +3,13 @@ role: aggregator
 service:
   port: 8090
 
+# Dashboard analitik untuk BNPB Internal Ops. Hanya path /dashboard yang dibuka: halaman statis dan
+# /dashboard/api/summary, yang menuntut token Bearer. /hazard-events dan Audit API tidak lewat ingress.
+ingress:
+  enabled: true
+  host: ops.prod.localtest.me
+  path: /dashboard
+
 # Kontrak M2: minimal 3 instance di node berbeda. maxReplicas 5 mengikuti skenario load test 3 -> 5.
 autoscaling:
   minReplicas: 3
@@ -11,11 +18,17 @@ topologySpread:
   whenUnsatisfiable: DoNotSchedule
 leaderElection:
   enabled: true
+podReader:
+  enabled: true
 
 env:
   AGGREGATOR_PORT: "8090"
   MONGO_DB_NAME: bnpb_canonical
   MONGO_HAZARD_COLLECTION: hazard_events
+  # Penyimpanan tersebar (Problem 1): unit store, jumlah salinan, dan batas waktu per unit.
+  STORE_UNIT_NAMES: store-0,store-1,store-2
+  STORE_REPLICATION_FACTOR: "2"
+  STORE_UNIT_TIMEOUT_MS: "2000"
   RABBITMQ_EXCHANGE: hazard_events
   RABBITMQ_EXCHANGE_TYPE: topic
   BMKG_BASE_URL: http://bmkg-mock:8081
@@ -38,8 +51,8 @@ extraEnv:
       secretKeyRef:
         name: app-secrets
         key: MONGO_ROOT_PASSWORD
-  - name: MONGO_URI
-    value: mongodb://$(MONGO_ROOT_USERNAME):$(MONGO_ROOT_PASSWORD)@mongo:27017/?authSource=admin
+  - name: STORE_URI_TEMPLATE
+    value: mongodb://$(MONGO_ROOT_USERNAME):$(MONGO_ROOT_PASSWORD)@%s.store:27017/?authSource=admin
   - name: RABBITMQ_USER
     valueFrom:
       secretKeyRef:
@@ -59,5 +72,7 @@ livenessProbe:
   initialDelaySeconds: 5
   periodSeconds: 10
 networkPolicy:
+  # traefik boleh menjangkau aggregator hanya lewat ingress /dashboard di bawah
+  ingressController: true
   from: [client-facing-api]
-  to: [bmkg-mock, pvmbg-mock, mongo, rabbitmq]
+  to: [bmkg-mock, pvmbg-mock, store, rabbitmq]
