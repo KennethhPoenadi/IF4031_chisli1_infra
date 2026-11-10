@@ -1,0 +1,15 @@
+# Tempo satu proses: menerima trace OTLP dari Alloy dan menyimpannya di disk lokal selama 24 jam.
+tempo:
+  retention: 24h
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: "0.0.0.0:4317"
+        http:
+          endpoint: "0.0.0.0:4318"
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 768Mi }
+persistence:
+  enabled: false

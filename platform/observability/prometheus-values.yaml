@@ -1,0 +1,73 @@
+# Prometheus: menarik metrik dari pod yang memakai anotasi prometheus.io/scrape (port 9102, modul telemetry),
+# dari kube-state-metrics (status pod dan node), node-exporter (CPU dan memori node), dan cAdvisor (kubelet).
+alertmanager:
+  enabled: false          # aturan tetap dievaluasi dan terlihat di Prometheus dan Grafana; notifikasi di luar cakupan
+prometheus-pushgateway:
+  enabled: false
+
+kube-state-metrics:
+  enabled: true
+  # label role dan nama aplikasi dibawa ke metrik pod agar dashboard dapat dikelompokkan per role
+  metricLabelsAllowlist:
+    - "pods=[role,app.kubernetes.io/name]"
+  resources:
+    requests: { cpu: 20m, memory: 48Mi }
+    limits: { memory: 128Mi }
+
+prometheus-node-exporter:
+  enabled: true
+  resources:
+    requests: { cpu: 20m, memory: 24Mi }
+    limits: { memory: 64Mi }
+
+server:
+  retention: 24h
+  persistentVolume:
+    enabled: false        # data metrik hilang bila pod dipindah; cukup untuk demo dan game day
+  global:
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    evaluation_interval: 30s
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 768Mi }
+
+serverFiles:
+  alerting_rules.yml:
+    groups:
+      - name: bnpb-slo
+        rules:
+          # SLO jalur peringatan: persentase pesan yang diproses notifier dalam 5 detik sejak disimpan.
+          - record: slo:alert_path_within_5s:ratio_rate5m
+            expr: |
+              sum(rate(notification_latency_seconds_bucket{le="5"}[5m]))
+                /
+              sum(rate(notification_latency_seconds_count[5m]))
+          - alert: AlertPathSlowerThan5s
+            expr: |
+              histogram_quantile(0.95, sum by (le) (rate(notification_latency_seconds_bucket[5m]))) > 5
+            for: 2m
+            labels: { severity: critical }
+            annotations:
+              summary: "p95 latensi jalur peringatan melebihi 5 detik"
+          - alert: StoreUnitDown
+            expr: store_unit_up == 0
+            for: 30s
+            labels: { severity: critical }
+            annotations:
+              summary: "unit penyimpanan {{ $labels.unit }} tidak terjangkau"
+          - alert: ServiceErrorRateHigh
+            expr: |
+              sum by (app_kubernetes_io_name) (rate(http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[2m]))
+                /
+              sum by (app_kubernetes_io_name) (rate(http_server_request_duration_seconds_count[2m])) > 0.01
+            for: 2m
+            labels: { severity: warning }
+            annotations:
+              summary: "error rate {{ $labels.app_kubernetes_io_name }} di atas 1%"
+          - alert: ScrapeTargetDown
+            expr: up{job="kubernetes-pods"} == 0
+            for: 1m
+            labels: { severity: warning }
+            annotations:
+              summary: "target metrik {{ $labels.pod }} tidak merespons"
