@@ -10,6 +10,7 @@ Kode aplikasi dan pipeline build image ada di repositori aplikasi. Dokumentasi l
 | --- | --- |
 | `terraform/` | Cluster kind sebagai resource Terraform: node, label ingress, pemetaan port 80/443, kubeconfig |
 | `platform/` | Values dan versi chart Traefik, metrics-server, Kyverno, dan Argo CD (`versions.env`) |
+| `platform/observability/` | Values Prometheus, Loki, Tempo, Alloy, Grafana, dan dashboard sebagai kode (`dashboards/*.json`, dihasilkan `scripts/gen-dashboards.py`) |
 | `charts/microservice/` | Satu chart generik: Deployment atau StatefulSet, Service, Ingress, HPA, ConfigMap, NetworkPolicy, PodDisruptionBudget |
 | `envs/dev`, `envs/prod` | Values per service dan per environment |
 | `envs/<env>/tags/` | Tag image per service, ditulis oleh job `release-*` dan dibaca Argo CD |
@@ -65,6 +66,7 @@ Didefinisikan di `.github/workflows/ci.yml` (validate dan platform) dan `.github
 | `mirror` | `mirror-images` | Menyalin MongoDB dan RabbitMQ ke repositori image kelompok di `ghcr.io` |
 | `cluster` | `cluster` | `terraform apply` untuk cluster kind |
 | `platform` | `platform` | Traefik, metrics-server, Kyverno, Argo CD, dan namespace `dev` dan `prod` |
+| `observability` | `observability` | Grafana, Prometheus, Loki, Tempo, dan Alloy di namespace `observability`. Tidak memblokir deploy aplikasi (`continue-on-error`) |
 | `policies` | `policies` | Menerapkan policy, menunggu Ready, lalu menguji penolakan manifest pelanggaran di cluster |
 | `secrets` | `secrets` (matriks `dev`, `prod`) | Secret `registry-credentials` (pull image) dan `app-secrets` per namespace |
 | `bootstrap` | `bootstrap-argocd` | Menerapkan `ApplicationSet` |
@@ -72,6 +74,52 @@ Didefinisikan di `.github/workflows/ci.yml` (validate dan platform) dan `.github
 | `promote` | `release-prod` | Menyalin tag dev ke prod, manual |
 
 Push ke `main` menjalankan `validate` sampai `bootstrap`; pull request hanya menjalankan `validate` (di runner GitHub). Workflow `Release` dipicu aplikasi atau manual. Job yang menyentuh cluster berjalan di self-hosted runner berlabel `k8s-local`, karena API server kind hanya terbuka di `127.0.0.1`. Pastikan `docker`, `kubectl`, `helm`, `terraform`, dan `kind` ada di `PATH` service runner (file `.path` di folder runner).
+
+## Observabilitas
+
+Stack Grafana: **Prometheus** (metrik), **Tempo** (trace), **Loki** (log), **Alloy** (pengumpul, satu pod per node), dan
+**Grafana** (tampilan). Semuanya di namespace `observability`, dipasang oleh `scripts/observability.sh` dengan versi chart
+yang di-pin di `platform/versions.env`. Aplikasi memakai modul bersama `services/telemetry` (OpenTelemetry).
+
+| Kebutuhan | Di mana melihatnya |
+| --- | --- |
+| Metrik per service (latensi p50/p95/p99, error rate, throughput) | Grafana → dashboard **BNPB / Service (RED)** |
+| Alur data dan jalur peringatan (latensi notifikasi terhadap 5 detik, ingest, penyimpanan tersebar) | **BNPB / Alur data dan jalur peringatan** |
+| Kesehatan node dan sebaran pod (dipakai saat game day) | **BNPB / Cluster dan node** |
+| Jejak satu permintaan lintas service dengan durasi tiap langkah | Grafana → Explore → **Tempo** |
+| Log terstruktur ber-correlation ID | Grafana → Explore → **Loki** |
+
+Membuka Grafana: `http://grafana.localtest.me`, pengguna `admin`. Kata sandi dibuat acak saat pemasangan pertama dan disimpan di
+Secret `grafana-admin` (bukan di Git):
+
+```
+kubectl -n observability get secret grafana-admin -o jsonpath='{.data.admin-password}' | base64 -d
+```
+
+Mengikuti satu permintaan:
+- **Dari correlation ID:** Explore → Tempo → TraceQL `{ span.correlation.id = "<id>" }`, atau Explore → Loki `{app="aggregator"} | correlation_id = "<id>"`.
+- **Dari log ke trace:** log aplikasi memuat `trace_id`; Loki menampilkan tautan **Buka trace**.
+- **Dari trace ke log:** buka sebuah span lalu pilih **Logs for this span**.
+- Di jalur data, trace berlanjut lewat RabbitMQ: span `publish` di aggregator tersambung ke span `process` di notifier dan dashboard-updater.
+
+Cara kerjanya di sisi service: setiap pod aplikasi mengekspos `/metrics` di port 9102 (terpisah dari port API, jadi tidak terkena
+autentikasi dan NetworkPolicy milik API) dan mengirim trace OTLP ke Alloy. Chart menambahkan anotasi `prometheus.io/*`, variabel
+`OTEL_*`, dan aturan NetworkPolicy yang diperlukan (Prometheus masuk, OTLP keluar). Konfigurasinya di blok `telemetry` pada
+`charts/microservice/values.yaml`. Saat load test besar, turunkan sampling trace agar kolektor tidak kewalahan:
+`telemetry.traceSampleRatio: "0.1"`.
+
+Aturan Prometheus (`prometheus-values.yaml`) mencakup SLO jalur peringatan (`slo:alert_path_within_5s:ratio_rate5m`) dan peringatan
+untuk p95 latensi > 5 detik, unit penyimpanan mati, error rate > 1%, dan target metrik tidak merespons.
+
+Mengubah dashboard: ubah `scripts/gen-dashboards.py`, jalankan `python3 scripts/gen-dashboards.py`, lalu commit JSON hasilnya.
+`validate.sh` gagal bila JSON tidak sesuai dengan skripnya.
+
+Batasan yang disadari:
+- **MongoDB dan RabbitMQ tidak punya metrik.** Keduanya image pihak ketiga tanpa modul telemetry, jadi tidak diekspor. Status unit penyimpanan
+  tetap terlihat lewat metrik aggregator (`store_unit_up`). Menambah exporter pihak ketiga adalah langkah terpisah.
+- **Data tidak persisten.** Prometheus, Loki, dan Tempo memakai penyimpanan sementara dan menyimpan 24 jam; data hilang bila pod dipindah.
+- **Alertmanager dimatikan.** Aturan tetap dievaluasi dan terlihat, tetapi tidak ada notifikasi keluar.
+- **Anggaran memori sekitar 1,1 GiB (requests) dan 3,1 GiB (limits)** di luar aplikasi, ditambah Alloy dan node-exporter di setiap node.
 
 ## Secret, variable, dan environment
 

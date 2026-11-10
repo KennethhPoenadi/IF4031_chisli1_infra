@@ -74,6 +74,18 @@ jobs:
       - uses: actions/checkout@v4
       - run: ./scripts/platform.sh
 
+  observability:
+    needs: [platform]
+    runs-on: [self-hosted, k8s-local]
+    # Observabilitas tidak boleh menghalangi deploy aplikasi: bila gagal, job ini berwarna kuning dan sisanya jalan.
+    continue-on-error: true
+    concurrency:
+      group: xops-cluster
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/observability.sh
+
   policies:
     needs: [platform]
     runs-on: [self-hosted, k8s-local]

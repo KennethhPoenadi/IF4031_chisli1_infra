@@ -24,6 +24,17 @@ if [ -f charts/microservice/Chart.yaml ]; then
   fi
 else echo "SKIP: chart belum ada"; fi
 
+if command -v python3 >/dev/null; then
+  echo "==> dashboard Grafana sinkron dengan skrip pembuatnya"
+  dash_tmp="$(mktemp -d)"
+  trap 'rm -rf "$dash_tmp"' EXIT
+  python3 ./scripts/gen-dashboards.py "$dash_tmp" >/dev/null
+  if ! diff -r "$dash_tmp" platform/observability/dashboards >/dev/null; then
+    echo "ERROR: platform/observability/dashboards tidak sesuai scripts/gen-dashboards.py. Jalankan skripnya lalu commit hasilnya." >&2
+    exit 1
+  fi
+fi
+
 if ! find policies/kyverno -name '*.yaml' -print -quit | grep -q .; then
   echo "ERROR: policy Kyverno tidak ditemukan" >&2
   exit 1
