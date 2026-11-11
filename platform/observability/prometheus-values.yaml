@@ -17,6 +17,11 @@ prometheus-node-exporter:
     requests: { cpu: 20m, memory: 24Mi }
     limits: { memory: 64Mi }
 
+configmapReload:
+  prometheus:
+    image:
+      tag: v0.94.0
+
 server:
   retention: 24h
   persistentVolume:
