@@ -18,6 +18,11 @@ helm repo add kyverno        https://kyverno.github.io/kyverno/ --force-update >
 helm repo add argo           https://argoproj.github.io/argo-helm --force-update >/dev/null
 helm repo update >/dev/null
 
+if kubectl get deployment -n kyverno >/dev/null 2>&1; then
+  echo "==> Menunggu Kyverno siap"
+  kubectl wait --for=condition=Available deployment --all -n kyverno --timeout=300s
+fi
+
 echo "==> Traefik $TRAEFIK_VERSION"
 helm upgrade --install traefik traefik/traefik \
   -n traefik --create-namespace --version "$TRAEFIK_VERSION" \
