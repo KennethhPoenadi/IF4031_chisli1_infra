@@ -21,7 +21,6 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 APP_NAMESPACE = "sistem-informasi-kebencanaan-bnpb"
 TESTER_NAMESPACE = "tester-agent"
 ROLES = {"aggregator", "store", "broker", "consumer", "api", "mock", "sensor", "other"}
-# role -> (memory requests, memory limits), Lampiran B
 CLASSES = {
     "aggregator": ("256Mi", "512Mi"),
     "store": ("512Mi", "1Gi"),
@@ -39,10 +38,8 @@ NETWORK_VOLUME_KEYS = {"nfs", "csi", "cephfs", "glusterfs", "iscsi", "rbd", "aws
 errors = []
 checked = 0
 
-
 def fail(where, msg):
     errors.append(f"{where}: {msg}")
-
 
 def render(env, svc):
     cmd = ["helm", "template", svc, "charts/microservice", "-f", f"envs/{env}/{svc}.yaml"]
@@ -55,7 +52,6 @@ def render(env, svc):
         fail(f"{env}/{svc}", f"helm template gagal: {out.stderr.strip().splitlines()[-1]}")
         return []
     return [d for d in yaml.safe_load_all(out.stdout) if d]
-
 
 def check_workload(env, svc, docs):
     where = f"{env}/{svc}"
@@ -74,7 +70,6 @@ def check_workload(env, svc, docs):
     if w["metadata"].get("labels", {}).get("role") != role:
         fail(where, "label role pada workload berbeda dengan label role pada pod")
 
-    # Lampiran B
     for c in tpl["spec"]["containers"]:
         res = c.get("resources", {})
         want_req, want_lim = CLASSES[role]
@@ -128,7 +123,6 @@ def check_workload(env, svc, docs):
     global checked
     checked += 1
 
-
 def check_applicationset():
     path = os.path.join(ROOT, "argocd/applicationset.yaml")
     with open(path) as f:
@@ -137,7 +131,6 @@ def check_applicationset():
         fail("argocd/applicationset.yaml", f"environment prod harus memakai namespace {APP_NAMESPACE}")
     if "namespace: '{{.namespace}}'" not in text:
         fail("argocd/applicationset.yaml", "destination.namespace harus memakai elemen namespace")
-
 
 def check_policies():
     for path in glob.glob(os.path.join(ROOT, "policies/kyverno/*.yaml")):
@@ -155,7 +148,6 @@ def check_policies():
                 if "prod" in nss:
                     fail(os.path.relpath(path, ROOT), "masih menyebut namespace 'prod', seharusnya " + APP_NAMESPACE)
 
-
 def main():
     for env in ("dev", "prod"):
         for values in sorted(glob.glob(os.path.join(ROOT, f"envs/{env}/*.yaml"))):
@@ -172,7 +164,6 @@ def main():
             print(f"  - {e}", file=sys.stderr)
         sys.exit(1)
     print(f"Kontrak M2 terpenuhi: {checked} workload diperiksa.")
-
 
 if __name__ == "__main__":
     main()

@@ -26,8 +26,8 @@ for env_name in dev prod; do
   done
 done
 
-if [ "$checked" -ne 14 ]; then
-  echo "ERROR: jumlah Deployment aplikasi dengan HPA adalah $checked, seharusnya 14" >&2
+if [ "$checked" -ne 16 ]; then
+  echo "ERROR: jumlah Deployment aplikasi dengan HPA adalah $checked, seharusnya 16" >&2
   exit 1
 fi
 

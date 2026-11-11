@@ -3,14 +3,11 @@ role: aggregator
 service:
   port: 8090
 
-# Dashboard analitik untuk BNPB Internal Ops. Hanya path /dashboard yang dibuka: halaman statis dan
-# /dashboard/api/summary, yang menuntut token Bearer. /hazard-events dan Audit API tidak lewat ingress.
 ingress:
   enabled: true
   host: ops.prod.localtest.me
   path: /dashboard
 
-# Kontrak M2: minimal 3 instance di node berbeda. maxReplicas 5 mengikuti skenario load test 3 -> 5.
 autoscaling:
   minReplicas: 3
   maxReplicas: 5
@@ -25,7 +22,6 @@ env:
   AGGREGATOR_PORT: "8090"
   MONGO_DB_NAME: bnpb_canonical
   MONGO_HAZARD_COLLECTION: hazard_events
-  # Penyimpanan tersebar (Problem 1): unit store, jumlah salinan, dan batas waktu per unit.
   STORE_UNIT_NAMES: store-0,store-1,store-2
   STORE_REPLICATION_FACTOR: "2"
   STORE_UNIT_TIMEOUT_MS: "2000"
@@ -37,6 +33,7 @@ env:
   AGGREGATOR_BMKG_TIMEOUT_MS: "2000"
   AGGREGATOR_PVMBG_TIMEOUT_MS: "4000"
   AGGREGATOR_PVMBG_STALE_AFTER_SECONDS: "30"
+  SITUATION_ANALYST_URL: http://situation-analyst:8094
 
 secretRefs: [app-secrets]
 
@@ -72,7 +69,6 @@ livenessProbe:
   initialDelaySeconds: 5
   periodSeconds: 10
 networkPolicy:
-  # traefik boleh menjangkau aggregator hanya lewat ingress /dashboard di bawah
   ingressController: true
   from: [client-facing-api]
-  to: [bmkg-mock, pvmbg-mock, store, rabbitmq]
+  to: [bmkg-mock, pvmbg-mock, store, rabbitmq, situation-analyst]

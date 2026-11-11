@@ -1,4 +1,3 @@
-# Loki satu proses (SingleBinary) dengan penyimpanan filesystem: cukup untuk demo dan hemat memori.
 deploymentMode: SingleBinary
 
 loki:
@@ -17,7 +16,7 @@ loki:
           prefix: loki_index_
           period: 24h
   limits_config:
-    allow_structured_metadata: true   # trace_id dan correlation_id disimpan sebagai structured metadata
+    allow_structured_metadata: true
     retention_period: 24h
   compactor:
     retention_enabled: true
@@ -33,7 +32,6 @@ singleBinary:
     requests: { cpu: 100m, memory: 256Mi }
     limits: { memory: 768Mi }
 
-# Komponen mode terdistribusi dimatikan.
 backend: { replicas: 0 }
 read: { replicas: 0 }
 write: { replicas: 0 }

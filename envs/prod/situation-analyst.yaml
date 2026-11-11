@@ -1,0 +1,59 @@
+role: other
+
+service:
+  port: 8094
+
+autoscaling:
+  minReplicas: 1
+  maxReplicas: 1
+pdb:
+  enabled: false
+
+env:
+  SITUATION_ANALYST_PORT: "8094"
+  RABBITMQ_EXCHANGE: hazard_events
+  ANALYST_QUEUE: situation-analyst-queue
+  ANALYST_BINDING_KEY: "hazard.#"
+  ANALYST_QUEUE_MAX_LENGTH: "2000"
+
+extraEnv:
+  - name: RABBITMQ_USER
+    valueFrom:
+      secretKeyRef:
+        name: app-secrets
+        key: RABBITMQ_USER
+  - name: RABBITMQ_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: app-secrets
+        key: RABBITMQ_PASSWORD
+  - name: RABBITMQ_URL
+    value: amqp://$(RABBITMQ_USER):$(RABBITMQ_PASSWORD)@rabbitmq:5672/
+  - name: ANALYST_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: app-secrets
+        key: AGGREGATOR_API_KEY
+  - name: LLM_BASE_URL
+    valueFrom:
+      secretKeyRef:
+        name: llm-credentials
+        key: LLM_BASE_URL
+        optional: true
+  - name: LLM_MODEL
+    valueFrom:
+      secretKeyRef:
+        name: llm-credentials
+        key: LLM_MODEL
+        optional: true
+  - name: LLM_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: llm-credentials
+        key: LLM_API_KEY
+        optional: true
+
+networkPolicy:
+  from: [aggregator]
+  to: [rabbitmq]
+  egressHTTPS: true

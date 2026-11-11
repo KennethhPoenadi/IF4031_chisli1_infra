@@ -13,19 +13,17 @@ import sys
 
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "platform/observability/dashboards")
 if len(sys.argv) > 1:
-    OUT = sys.argv[1]  # folder keluaran lain, dipakai validate.sh untuk membandingkan tanpa menimpa
+    OUT = sys.argv[1]
 NS = "sistem-informasi-kebencanaan-bnpb"
 DS = {"type": "prometheus", "uid": "prometheus"}
-APP = "app_kubernetes_io_name"  # label nama aplikasi dari label pod, dibawa oleh scrape Prometheus
+APP = "app_kubernetes_io_name"
 LAT = "http_server_request_duration_seconds"
 
 _next_id = [0]
 
-
 def _id():
     _next_id[0] += 1
     return _next_id[0]
-
 
 def target(expr, legend="", ref="A", instant=False):
     t = {"datasource": DS, "expr": expr, "legendFormat": legend, "refId": ref}
@@ -33,11 +31,9 @@ def target(expr, legend="", ref="A", instant=False):
         t["instant"] = True
     return t
 
-
 def row(title, y):
     return {"id": _id(), "type": "row", "title": title, "collapsed": False,
             "gridPos": {"h": 1, "w": 24, "x": 0, "y": y}, "panels": []}
-
 
 def timeseries(title, exprs, x, y, w=12, h=8, unit="short", desc="", thresholds=None, stack=False, minimum=None, maximum=None):
     """exprs: daftar (expr, legend). thresholds: garis ambang, mis. [(5, 'red')]."""
@@ -62,7 +58,6 @@ def timeseries(title, exprs, x, y, w=12, h=8, unit="short", desc="", thresholds=
         "targets": [target(e, l, chr(65 + i)) for i, (e, l) in enumerate(exprs)],
     }
 
-
 def stat(title, expr, x, y, w=6, h=4, unit="short", desc="", steps=None, mappings=None, decimals=None):
     defaults = {"unit": unit,
                 "thresholds": {"mode": "absolute", "steps": steps or [{"color": "blue", "value": None}]}}
@@ -79,7 +74,6 @@ def stat(title, expr, x, y, w=6, h=4, unit="short", desc="", steps=None, mapping
         "targets": [target(expr, "{{unit}}", instant=True)],
     }
 
-
 def dashboard(uid, title, panels, variables=None, description=""):
     return {
         "uid": uid, "title": title, "description": description, "tags": ["bnpb", "m2"], "schemaVersion": 39,
@@ -89,12 +83,10 @@ def dashboard(uid, title, panels, variables=None, description=""):
         "annotations": {"list": []},
     }
 
-
 def var_app():
     return {"name": "app", "label": "Service", "type": "query", "datasource": DS, "multi": True, "includeAll": True,
             "allValue": ".+", "current": {"selected": True, "text": "All", "value": "$__all"}, "refresh": 2,
             "query": {"query": f"label_values({LAT}_count, {APP})", "refId": "app"}, "sort": 1}
-
 
 def write(name, d):
     os.makedirs(OUT, exist_ok=True)
@@ -102,10 +94,6 @@ def write(name, d):
         json.dump(d, f, indent=2, ensure_ascii=False)
         f.write("\n")
 
-
-# ---------------------------------------------------------------------------------------------------------------
-# 1. RED per service
-# ---------------------------------------------------------------------------------------------------------------
 def services():
     sel = f'{APP}=~"$app"'
     q = lambda p: (f'histogram_quantile({p}, sum by (le, {APP}) (rate({LAT}_bucket{{{sel}}}[2m])))', f"{{{{{APP}}}}}")
@@ -142,10 +130,6 @@ def services():
         "bnpb-services", "BNPB / Service (RED)", panels, [var_app()],
         "Throughput, error rate, dan latensi p50/p95/p99 per service, dari metrik OpenTelemetry modul telemetry."))
 
-
-# ---------------------------------------------------------------------------------------------------------------
-# 2. Alur data dan jalur peringatan
-# ---------------------------------------------------------------------------------------------------------------
 def pipeline():
     panels = [
         row("Jalur peringatan (SLO)", 0),
@@ -200,10 +184,6 @@ def pipeline():
         "bnpb-pipeline", "BNPB / Alur data dan jalur peringatan", panels,
         description="Latensi jalur peringatan terhadap target 5 detik, ingest, dan kesehatan penyimpanan tersebar."))
 
-
-# ---------------------------------------------------------------------------------------------------------------
-# 3. Cluster dan node
-# ---------------------------------------------------------------------------------------------------------------
 def cluster():
     panels = [
         row("Node", 0),
@@ -233,7 +213,6 @@ def cluster():
     write("cluster.json", dashboard(
         "bnpb-cluster", "BNPB / Cluster dan node", panels,
         description="Kesehatan node, sebaran pod, dan restart. Dipakai saat game day untuk menjelaskan kegagalan."))
-
 
 if __name__ == "__main__":
     services()

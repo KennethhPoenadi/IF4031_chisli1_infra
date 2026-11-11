@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
-# Memasang Tester Agent persis seperti ketentuan M2: manifest pada commit yang di-pin, tanpa mengubah image.
-# Sebelum memasang, memastikan manifest memang memakai digest image yang ditetapkan asisten.
-#
-#   ./scripts/install-tester-agent.sh            pasang
-#   ./scripts/install-tester-agent.sh --check    hanya verifikasi manifest dan dry-run server
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/env.sh

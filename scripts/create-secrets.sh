@@ -11,7 +11,6 @@ fi
 
 kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
-# Pull credentials for the image registry. Use a read-only token (GHCR: classic PAT with only read:packages).
 : "${REGISTRY_SERVER:=ghcr.io}"
 REGISTRY_USER="${REGISTRY_USER:-}"
 REGISTRY_PASS="${REGISTRY_PASS:-}"
@@ -28,7 +27,6 @@ args=()
 missing=()
 while read -r key; do
   [[ -z "$key" || "$key" == \#* ]] && continue
-  # key berakhiran `?` bersifat opsional: dipakai bila terisi, dilewati diam-diam bila kosong
   optional=false
   if [[ "$key" == *\? ]]; then optional=true; key="${key%\?}"; fi
   if [ -n "${!key:-}" ]; then
@@ -45,5 +43,16 @@ fi
 
 kubectl create secret generic app-secrets "${args[@]}" \
   -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+
+if [ -n "${LLM_API_KEY:-}" ] && [ -n "${LLM_BASE_URL:-}" ] && [ -n "${LLM_MODEL:-}" ]; then
+  kubectl create secret generic llm-credentials \
+    --from-literal=LLM_BASE_URL="$LLM_BASE_URL" \
+    --from-literal=LLM_MODEL="$LLM_MODEL" \
+    --from-literal=LLM_API_KEY="$LLM_API_KEY" \
+    -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+  echo "Secret llm-credentials siap di namespace $NAMESPACE"
+else
+  echo "LLM_* tidak lengkap: llm-credentials dilewati (analisis memakai templat)"
+fi
 
 echo "Secret registry-credentials dan app-secrets siap di namespace $NAMESPACE (environment $ENV_NAME)"

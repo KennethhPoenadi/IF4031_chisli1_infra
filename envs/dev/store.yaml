@@ -1,8 +1,6 @@
 role: store
 
 kind: StatefulSet
-# Satu unit penyimpanan = satu pod MongoDB mandiri. Aggregator menyebarkan data ke seluruh unit dengan
-# consistent hashing dan menyimpan dua salinan per event (RF=2), jadi dev cukup satu unit dan prod tiga unit.
 replicaCount: 1
 
 image:
@@ -10,7 +8,7 @@ image:
 
 service:
   port: 27017
-  headless: true   # store-0.store, store-1.store, ... dipakai aggregator
+  headless: true
 
 autoscaling:
   enabled: false
@@ -62,6 +60,5 @@ networkPolicy:
 pdb:
   enabled: false
 
-# Image pihak ketiga: tidak memakai modul telemetry, jadi tidak ada port metrik dan trace.
 telemetry:
   enabled: false

@@ -1,5 +1,3 @@
-# Grafana: dashboard sebagai kode (ConfigMap berlabel grafana_dashboard), sumber data terhubung satu sama lain:
-# log -> trace (trace_id), trace -> log (pod dan trace id). Kata sandi admin dari Secret, dibuat scripts/observability.sh.
 admin:
   existingSecret: grafana-admin
   userKey: admin-user

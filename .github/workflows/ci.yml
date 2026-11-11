@@ -14,8 +14,6 @@ defaults:
     shell: bash
 
 jobs:
-  # Runs on GitHub-hosted runners, so it is safe for pull requests. Everything below touches the
-  # local cluster and runs only for main, on the self-hosted runner labelled k8s-local.
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -30,7 +28,6 @@ jobs:
           curl -fsSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz \
             | sudo tar -xz -C /usr/local/bin kubeconform
           kubeconform -v
-      # validate.sh runs the Kyverno CLI through Docker when it is not installed.
       - run: ./scripts/validate.sh
 
   mirror-images:
@@ -38,8 +35,6 @@ jobs:
     needs: [validate]
     runs-on: [self-hosted, k8s-local]
     continue-on-error: true
-    # The package is owned by the app repo, so grant this repo Write once under the package's
-    # "Manage Actions access"; until then this job fails, which is tolerated (continue-on-error).
     permissions:
       contents: read
       packages: write
@@ -77,7 +72,6 @@ jobs:
   observability:
     needs: [platform]
     runs-on: [self-hosted, k8s-local]
-    # Observabilitas tidak boleh menghalangi deploy aplikasi: bila gagal, job ini berwarna kuning dan sisanya jalan.
     continue-on-error: true
     concurrency:
       group: xops-cluster
@@ -107,9 +101,6 @@ jobs:
           kubectl get clusterpolicy
           ./scripts/test-kyverno-admission.sh
 
-  # One job per environment. Application secrets are not stored in GitHub: they live in
-  # ~/.xops/<env>.env on the self-hosted runner (KEY=value lines, see scripts/secret-keys.txt, plus
-  # REGISTRY_USER and REGISTRY_PASS for the image pull secret). The file stays outside the repo.
   secrets:
     needs: [policies]
     runs-on: [self-hosted, k8s-local]

@@ -1,8 +1,6 @@
 {{- define "microservice.name" -}}
 {{- .Release.Name -}}
 {{- end -}}
-
-{{- /* Kontrak M2: label `role` wajib dan hanya boleh bernilai salah satu dari delapan kelas. */ -}}
 {{- define "microservice.role" -}}
 {{- $roles := list "aggregator" "store" "broker" "consumer" "api" "mock" "sensor" "other" -}}
 {{- $role := required "role wajib diisi (aggregator|store|broker|consumer|api|mock|sensor|other)" .Values.role -}}
@@ -11,8 +9,6 @@
 {{- end -}}
 {{- $role -}}
 {{- end -}}
-
-{{- /* CPU dari values, memori dari kelas role (Lampiran B). */ -}}
 {{- define "microservice.resources" -}}
 {{- $class := index .Values.resourceClasses (include "microservice.role" .) -}}
 requests:
@@ -112,7 +108,6 @@ spec:
           containerPort: {{ .Values.telemetry.metricsPort }}
         {{- end }}
       env:
-        # Audit API (Lampiran A) menyebut nama node seperti pada `kubectl get nodes`.
         - name: NODE_NAME
           valueFrom:
             fieldRef: { fieldPath: spec.nodeName }

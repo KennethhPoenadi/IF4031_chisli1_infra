@@ -26,6 +26,7 @@ spec:
                 - svc: client-facing-api
                 - svc: notifier
                 - svc: dashboard-updater
+                - svc: situation-analyst
   template:
     metadata:
       name: '{{.svc}}-{{.env}}'

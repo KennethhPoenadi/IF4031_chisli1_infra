@@ -1,4 +1,3 @@
-# Tempo satu proses: menerima trace OTLP dari Alloy dan menyimpannya di disk lokal selama 24 jam.
 tempo:
   retention: 24h
   receivers:

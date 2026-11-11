@@ -35,7 +35,6 @@ spec:
           port: {{ $.Values.service.port }}
     {{- end }}
     {{- if .Values.telemetry.enabled }}
-    # Prometheus (namespace observability) mengambil metrik dari port metrik, bukan dari port aplikasi.
     - from:
         - namespaceSelector:
             matchLabels:
@@ -61,7 +60,6 @@ spec:
         - protocol: TCP
           port: 53
     {{- if .Values.telemetry.enabled }}
-    # Trace dikirim ke kolektor OTLP (Alloy) di namespace observability.
     - to:
         - namespaceSelector:
             matchLabels:
@@ -69,6 +67,15 @@ spec:
       ports:
         - protocol: TCP
           port: {{ .Values.telemetry.otlpPort }}
+    {{- end }}
+    {{- if .Values.networkPolicy.egressHTTPS }}
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 169.254.0.0/16, 127.0.0.0/8]
+      ports:
+        - protocol: TCP
+          port: 443
     {{- end }}
     {{- if .Values.networkPolicy.to }}
     - to:

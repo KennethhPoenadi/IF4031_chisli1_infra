@@ -1,13 +1,10 @@
-# Prometheus: menarik metrik dari pod yang memakai anotasi prometheus.io/scrape (port 9102, modul telemetry),
-# dari kube-state-metrics (status pod dan node), node-exporter (CPU dan memori node), dan cAdvisor (kubelet).
 alertmanager:
-  enabled: false          # aturan tetap dievaluasi dan terlihat di Prometheus dan Grafana; notifikasi di luar cakupan
+  enabled: false
 prometheus-pushgateway:
   enabled: false
 
 kube-state-metrics:
   enabled: true
-  # label role dan nama aplikasi dibawa ke metrik pod agar dashboard dapat dikelompokkan per role
   metricLabelsAllowlist:
     - "pods=[role,app.kubernetes.io/name]"
   resources:
@@ -23,7 +20,7 @@ prometheus-node-exporter:
 server:
   retention: 24h
   persistentVolume:
-    enabled: false        # data metrik hilang bila pod dipindah; cukup untuk demo dan game day
+    enabled: false
   global:
     scrape_interval: 15s
     scrape_timeout: 10s
@@ -37,7 +34,6 @@ serverFiles:
     groups:
       - name: bnpb-slo
         rules:
-          # SLO jalur peringatan: persentase pesan yang diproses notifier dalam 5 detik sejak disimpan.
           - record: slo:alert_path_within_5s:ratio_rate5m
             expr: |
               sum(rate(notification_latency_seconds_bucket{le="5"}[5m]))

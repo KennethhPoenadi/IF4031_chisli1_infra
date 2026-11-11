@@ -1,4 +1,3 @@
-# Alloy (DaemonSet): satu pengumpul per node untuk (1) log container ke Loki dan (2) trace OTLP ke Tempo.
 controller:
   type: daemonset
 

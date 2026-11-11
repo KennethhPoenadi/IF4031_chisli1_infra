@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Memasang stack observabilitas (Grafana, Prometheus, Loki, Tempo, Alloy) di namespace `observability` beserta
-# dashboard sebagai kode. Idempoten: aman dijalankan ulang. Versi chart di-pin di platform/versions.env.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 source scripts/env.sh
@@ -24,8 +22,6 @@ helm repo update >/dev/null
 
 kubectl create namespace "$NS" --dry-run=client -o yaml | kubectl apply -f -
 
-# Kata sandi admin Grafana: dibuat sekali, tidak pernah ditimpa. Bisa diisi lewat GRAFANA_ADMIN_PASSWORD,
-# jika kosong dibangkitkan acak. Tidak disimpan di Git.
 if ! kubectl -n "$NS" get secret grafana-admin >/dev/null 2>&1; then
   pass="${GRAFANA_ADMIN_PASSWORD:-$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24)}"
   kubectl -n "$NS" create secret generic grafana-admin \
@@ -34,12 +30,11 @@ if ! kubectl -n "$NS" get secret grafana-admin >/dev/null 2>&1; then
   echo "  kubectl -n $NS get secret grafana-admin -o jsonpath='{.data.admin-password}' | base64 -d"
 fi
 
-install() { # nama chart versi values
+install() {
   echo "==> $1 $3"
   helm upgrade --install "$1" "$2" -n "$NS" --version "$3" -f "$4" --wait --timeout 6m
 }
 
-# Urutan: penyimpanan data dulu, lalu pengumpul, Grafana terakhir.
 install loki       grafana/loki                        "$LOKI_VERSION"       "$O/loki-values.yaml"
 install tempo      grafana/tempo                       "$TEMPO_VERSION"      "$O/tempo-values.yaml"
 install prometheus prometheus-community/prometheus     "$PROMETHEUS_VERSION" "$O/prometheus-values.yaml"
