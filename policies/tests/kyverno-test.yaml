@@ -34,6 +34,16 @@ results:
     resources: [bad-image-repository]
     kind: Pod
     result: fail
+  - policy: restrict-image-repositories
+    rule: require-pinned-sensor-pantai-image
+    resources: [sensor-pantai-pinned]
+    kind: Pod
+    result: pass
+  - policy: restrict-image-repositories
+    rule: require-pinned-sensor-pantai-image
+    resources: [sensor-pantai-wrong-image]
+    kind: Pod
+    result: fail
   - policy: require-container-security
     rule: require-run-as-non-root
     resources: [compliant-pod]

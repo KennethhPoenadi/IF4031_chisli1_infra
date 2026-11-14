@@ -140,7 +140,7 @@ Secret aplikasi (daftar di `scripts/secret-keys.txt`) dan kredensial pull image 
 ~/.xops/prod.env
 ```
 
-Isi kedua file sama bentuknya (nilai boleh beda): 15 baris `KEY=value` dari `secret-keys.txt`, ditambah `REGISTRY_USER=<username>` dan `REGISTRY_PASS=<classic PAT, hanya scope read:packages>`.
+Isi kedua file sama bentuknya (nilai boleh beda): 18 baris `KEY=value` dari `secret-keys.txt`, ditambah `REGISTRY_USER=<username>` dan `REGISTRY_PASS=<classic PAT, hanya scope read:packages>`.
 
 File di-`source` oleh shell, jadi nilai dengan spasi atau karakter khusus perlu diberi kutip. Jalankan `chmod 600` pada keduanya.
 

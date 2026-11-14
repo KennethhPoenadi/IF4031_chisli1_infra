@@ -41,6 +41,30 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
+  name: sensor-pantai-pinned
+  namespace: dev
+  labels:
+    role: sensor
+spec:
+  containers:
+    - name: sensor-pantai
+      image: sustuna/sensor-pantai@sha256:51fbd90d3891ad6e9f5768ad330ffb65205644cb29e50da65c7538f2e0b4397d
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sensor-pantai-wrong-image
+  namespace: dev
+  labels:
+    role: sensor
+spec:
+  containers:
+    - name: sensor-pantai
+      image: sustuna/sensor-pantai:latest
+---
+apiVersion: v1
+kind: Pod
+metadata:
   name: bad-run-as-root
   namespace: dev
 spec:
