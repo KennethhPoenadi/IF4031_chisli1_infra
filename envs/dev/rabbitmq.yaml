@@ -8,6 +8,8 @@ image:
 
 service:
   port: 5672
+  extraPorts:
+    - { name: management, port: 15672 }
 
 autoscaling:
   enabled: false
@@ -45,8 +47,10 @@ readinessProbe:
   initialDelaySeconds: 15
   periodSeconds: 15
 networkPolicy:
-  from: [aggregator, notifier, dashboard-updater]
+  from: [aggregator, notifier, dashboard-updater, situation-analyst, client-facing-api]
   to: []
+  extraIngress:
+    - { namespaces: [keda], port: 15672 }
 pdb:
   enabled: false
 

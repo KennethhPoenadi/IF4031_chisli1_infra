@@ -42,6 +42,12 @@ env:
   AGGREGATOR_PANTAI_CIRCUIT_FAILURES: "3"
   AGGREGATOR_PANTAI_CIRCUIT_OPEN_SECONDS: "10"
   SITUATION_ANALYST_URL: http://situation-analyst:8094
+  PVMBG_FIELD_ALIASES: ""
+  PVMBG_FIELD_COERCE: ""
+  DLQ_RETRY_INTERVAL_SECONDS: "5"
+  FIELD_REPORTS_ENABLED: "true"
+  FIELD_REPORT_PREFETCH: "20"
+  FIELD_REPORT_PROCESS_DELAY_MS: "0"
 
 secretRefs: [app-secrets]
 
@@ -78,5 +84,5 @@ livenessProbe:
   periodSeconds: 10
 networkPolicy:
   ingressController: true
-  from: [client-facing-api]
+  from: [client-facing-api, satellite-ingestor]
   to: [bmkg-mock, pvmbg-mock, sensor-pantai, store, rabbitmq, situation-analyst]

@@ -28,6 +28,7 @@ spec:
                 - svc: dashboard-updater
                 - svc: situation-analyst
                 - svc: sensor-pantai
+                - svc: satellite-ingestor
   template:
     metadata:
       name: '{{.svc}}-{{.env}}'

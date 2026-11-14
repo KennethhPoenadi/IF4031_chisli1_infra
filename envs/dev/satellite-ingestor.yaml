@@ -1,0 +1,50 @@
+role: consumer
+
+strategy:
+  type: Recreate
+
+service:
+  port: 8095
+
+autoscaling:
+  minReplicas: 1
+  maxReplicas: 1
+pdb:
+  enabled: false
+
+livenessProbe:
+  httpGet: { path: /health, port: http }
+  initialDelaySeconds: 5
+  periodSeconds: 10
+readinessProbe:
+  httpGet: { path: /ready, port: http }
+  initialDelaySeconds: 3
+  periodSeconds: 5
+
+env:
+  SATELLITE_INGESTOR_PORT: "8095"
+  SATELLITE_BASE_URL: https://satellite.naufarrel.dev
+  # Batas keterlambatan (menit, waktu satelit). Tetapkan dari rekaman feed (cmd/record).
+  SATELLITE_LATENESS_MINUTES: "360"
+  SATELLITE_HEARTBEAT_TIMEOUT_SECONDS: "30"
+  SATELLITE_BATCH_MAX: "500"
+  SATELLITE_BATCH_WAIT_MS: "250"
+  AGGREGATOR_URL: http://aggregator:8090
+
+extraEnv:
+  - name: SATELLITE_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: app-secrets
+        key: SATELLITE_TOKEN
+        optional: true
+  - name: AGGREGATOR_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: app-secrets
+        key: AGGREGATOR_API_KEY
+
+networkPolicy:
+  from: []
+  to: [aggregator]
+  egressHTTPS: true

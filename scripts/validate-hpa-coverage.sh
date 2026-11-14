@@ -15,6 +15,16 @@ for env_name in dev prod; do
       --set "image.tag=$service-validate")"
 
     if printf '%s\n' "$rendered" | grep -q '^kind: Deployment$'; then
+      # ScaledObject KEDA membuat HPA sendiri, sehingga dihitung setara HPA.
+      if printf '%s\n' "$rendered" | grep -q '^kind: ScaledObject$'; then
+        if printf '%s\n' "$rendered" | grep -q '^kind: HorizontalPodAutoscaler$'; then
+          echo "ERROR: $env_name/$service memiliki HPA dan ScaledObject sekaligus" >&2
+          exit 1
+        fi
+        echo "PASS: $env_name/$service memiliki Deployment dan ScaledObject (KEDA)"
+        checked=$((checked + 1))
+        continue
+      fi
       if ! printf '%s\n' "$rendered" | grep -q '^kind: HorizontalPodAutoscaler$'; then
         echo "ERROR: $env_name/$service memiliki Deployment tanpa HPA" >&2
         exit 1
@@ -26,9 +36,9 @@ for env_name in dev prod; do
   done
 done
 
-if [ "$checked" -ne 18 ]; then
-  echo "ERROR: jumlah Deployment aplikasi dengan HPA adalah $checked, seharusnya 18" >&2
+if [ "$checked" -ne 20 ]; then
+  echo "ERROR: jumlah Deployment aplikasi dengan HPA atau ScaledObject adalah $checked, seharusnya 20" >&2
   exit 1
 fi
 
-echo "Validasi HPA selesai: $checked Deployment memiliki HPA."
+echo "Validasi autoscaling selesai: $checked Deployment memiliki HPA atau ScaledObject."

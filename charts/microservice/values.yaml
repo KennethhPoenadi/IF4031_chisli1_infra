@@ -15,6 +15,9 @@ replicaCount: 1
 automountServiceAccountToken: false
 
 strategy:
+  # RollingUpdate atau Recreate. Recreate dipakai singleton yang tidak boleh berjalan
+  # dua sekaligus (satellite-ingestor: feed hanya menerima satu koneksi per token).
+  type: RollingUpdate
   maxSurge: 1
   maxUnavailable: 0
 
@@ -53,6 +56,8 @@ podReader:
 service:
   port: 8080
   headless: false
+  # Port tambahan, misalnya management API RabbitMQ untuk scaler KEDA: [{name, port}]
+  extraPorts: []
 
 env: {}
 secretRefs: []
@@ -101,9 +106,21 @@ readinessProbe:
 
 autoscaling:
   enabled: true
+  # hpa: HPA berbasis CPU. keda: ScaledObject KEDA berbasis panjang antrean RabbitMQ
+  # (Bonus M2: kapasitas yang menyesuaikan diri), menggantikan HPA chart karena KEDA
+  # membuat HPA-nya sendiri dan dua HPA pada satu target saling bertabrakan.
+  engine: hpa
   minReplicas: 2
   maxReplicas: 3
   targetCPUUtilizationPercentage: 60
+  keda:
+    queueName: ""
+    # Jumlah pesan antre yang ditanggung satu replika sebelum menambah replika.
+    queueLength: 20
+    pollingInterval: 5
+    cooldownPeriod: 60
+    # Secret berisi URL management API RabbitMQ (key: host), dibuat scripts/create-secrets.sh.
+    hostSecret: rabbitmq-keda
 
 ingress:
   enabled: false
@@ -125,3 +142,5 @@ networkPolicy:
   fromNamespaces: []
   to: []
   egressHTTPS: false
+  # Ingress tambahan ke port lain: [{namespaces: [keda], port: 15672}]
+  extraIngress: []

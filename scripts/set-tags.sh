@@ -3,7 +3,7 @@ cd "$(dirname "$0")/.."
 
 ENV_NAME="${1:?usage: set-tags.sh <dev|prod> [sha]}"
 SHA="${2:-}"
-APP_SERVICES=(auth-service bmkg-mock pvmbg-mock aggregator client-facing-api notifier dashboard-updater situation-analyst)
+APP_SERVICES=(auth-service bmkg-mock pvmbg-mock aggregator client-facing-api notifier dashboard-updater situation-analyst satellite-ingestor)
 
 PUSH_URL="${GITOPS_PUSH_URL:-}"
 if [ -z "$PUSH_URL" ]; then
