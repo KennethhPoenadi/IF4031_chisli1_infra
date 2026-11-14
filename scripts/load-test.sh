@@ -59,6 +59,11 @@ fi
 echo "==> k6 $K6_SCRIPT VUS=${VUS:-} DURATION=${DURATION:-}"
 code=0
 VUS="${VUS:-}" DURATION="${DURATION:-}" BASE_URL="${BASE_URL:-}" \
+  AUTH_BASE_URL="${AUTH_BASE_URL:-http://auth.prod.localtest.me}" \
+  FIELD_CLIENT_ID="${FIELD_CLIENT_ID:-${AUTH_CLIENT_FIELD_ID:-}}" \
+  FIELD_CLIENT_SECRET="${FIELD_CLIENT_SECRET:-${AUTH_CLIENT_FIELD_SECRET:-}}" \
+  MEDIA_CLIENT_ID="${MEDIA_CLIENT_ID:-${AUTH_CLIENT_MEDIA_ID:-}}" \
+  MEDIA_CLIENT_SECRET="${MEDIA_CLIENT_SECRET:-${AUTH_CLIENT_MEDIA_SECRET:-}}" \
   k6 run --summary-export "$OUT_DIR/k6-summary.json" "$K6_SCRIPT" 2>&1 | tee "$OUT_DIR/k6.log" || code=$?
 
 [ -n "$scaler_pid" ] && wait "$scaler_pid" 2>/dev/null || true
