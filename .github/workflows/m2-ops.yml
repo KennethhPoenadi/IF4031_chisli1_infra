@@ -17,7 +17,7 @@ on:
       job:
         description: Job yang dijalankan
         type: choice
-        options: [tester-agent-compat, game-day, load-test]
+        options: [tester-agent-compat, game-day, load-test, p5-priority]
         default: tester-agent-compat
       practice:
         description: "tester-agent-compat: skenario latihan yang ikut dijalankan (kosong = tidak)"
@@ -32,7 +32,7 @@ on:
         type: string
         default: "180"
       k6_script:
-        description: "load-test/game-day: path skrip k6 di repositori aplikasi"
+        description: "load-test/game-day: path skrip k6 di repositori aplikasi (p5-priority memakai path tetap)"
         type: string
         default: "tests/k6/p2-sustained.js"
       vus:
@@ -116,7 +116,7 @@ jobs:
           retention-days: 30
 
   load-test:
-    if: github.event_name == 'workflow_dispatch' && inputs.job == 'load-test'
+    if: github.event_name == 'workflow_dispatch' && (inputs.job == 'load-test' || inputs.job == 'p5-priority')
     runs-on: [self-hosted, k8s-local]
     timeout-minutes: 60
     steps:
@@ -130,11 +130,12 @@ jobs:
           token: ${{ secrets.APP_READ_TOKEN || github.token }}
       - name: Load test
         env:
-          K6_SCRIPT: app/${{ inputs.k6_script }}
+          K6_SCRIPT: ${{ inputs.job == 'p5-priority' && 'app/tests/k6/p5-priority.js' || format('app/{0}', inputs.k6_script) }}
           VUS: ${{ inputs.vus }}
-          DURATION: ${{ inputs.duration }}
+          DURATION: ${{ inputs.job == 'p5-priority' && '45s' || inputs.duration }}
           BASE_URL: ${{ vars.LOAD_TEST_BASE_URL }}
-          SCALE_PLAN: ${{ inputs.scale_plan }}
+          AUTH_BASE_URL: ${{ vars.LOAD_TEST_AUTH_URL }}
+          SCALE_PLAN: ${{ inputs.job == 'p5-priority' && '' || inputs.scale_plan }}
           OUT_DIR: evidence/load-test
         run: |
           set -a; source "$HOME/.xops/prod.env"; set +a
