@@ -3,7 +3,7 @@ cd "$(dirname "$0")/.."
 source scripts/env.sh
 source platform/versions.env
 
-for v in TRAEFIK_VERSION METRICS_SERVER_VERSION KYVERNO_VERSION ARGOCD_VERSION; do
+for v in TRAEFIK_VERSION METRICS_SERVER_VERSION KYVERNO_VERSION ARGOCD_VERSION KEDA_VERSION; do
   if [ -z "${!v:-}" ]; then
     echo "ERROR: $v kosong. Jalankan ./scripts/pin-versions.sh lalu commit platform/versions.env" >&2
     exit 1
@@ -16,6 +16,7 @@ helm repo add traefik        https://traefik.github.io/charts --force-update >/d
 helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/ --force-update >/dev/null
 helm repo add kyverno        https://kyverno.github.io/kyverno/ --force-update >/dev/null
 helm repo add argo           https://argoproj.github.io/argo-helm --force-update >/dev/null
+helm repo add kedacore       https://kedacore.github.io/charts --force-update >/dev/null
 helm repo update >/dev/null
 
 if kubectl get deployment -n kyverno >/dev/null 2>&1; then
@@ -38,6 +39,12 @@ helm upgrade --install kyverno kyverno/kyverno \
   -n kyverno --create-namespace --version "$KYVERNO_VERSION" \
   --wait --timeout 8m
 kubectl wait --for=condition=Available deployment --all -n kyverno --timeout=300s
+
+# KEDA harus terpasang sebelum Argo CD menyinkronkan ScaledObject konsumer.
+echo "==> KEDA $KEDA_VERSION"
+helm upgrade --install keda kedacore/keda \
+  -n keda --create-namespace --version "$KEDA_VERSION" \
+  --wait --timeout 5m
 
 echo "==> Argo CD $ARGOCD_VERSION"
 helm upgrade --install argocd argo/argo-cd \

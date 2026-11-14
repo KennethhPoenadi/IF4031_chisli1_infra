@@ -20,6 +20,11 @@ spec:
               selector:
                 matchLabels:
                   role: aggregator
+          # Diskalakan ScaledObject KEDA; HPA-nya dibuat KEDA setelah Deployment ada.
+          - resources:
+              selector:
+                matchLabels:
+                  autoscaling.bnpb/engine: keda
       context:
         - name: matchingHpas
           apiCall:

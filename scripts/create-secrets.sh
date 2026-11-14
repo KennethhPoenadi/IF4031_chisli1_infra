@@ -44,6 +44,11 @@ fi
 kubectl create secret generic app-secrets "${args[@]}" \
   -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
+# URL management API RabbitMQ untuk scaler KEDA (Bonus C: autoscaling menurut panjang antrean).
+kubectl create secret generic rabbitmq-keda \
+  --from-literal=host="http://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq.${NAMESPACE}.svc:15672/" \
+  -n "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+
 if [ -n "${LLM_API_KEY:-}" ] && [ -n "${LLM_BASE_URL:-}" ] && [ -n "${LLM_MODEL:-}" ]; then
   kubectl create secret generic llm-credentials \
     --from-literal=LLM_BASE_URL="$LLM_BASE_URL" \
