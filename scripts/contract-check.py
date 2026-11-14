@@ -34,6 +34,7 @@ CLASSES = {
 LOCAL_STORAGE_CLASSES = {"", "local-path", "standard"}
 NETWORK_VOLUME_KEYS = {"nfs", "csi", "cephfs", "glusterfs", "iscsi", "rbd", "awsElasticBlockStore",
                        "azureDisk", "azureFile", "gcePersistentDisk"}
+SENSOR_PANTAI_IMAGE = "sustuna/sensor-pantai@sha256:51fbd90d3891ad6e9f5768ad330ffb65205644cb29e50da65c7538f2e0b4397d"
 
 errors = []
 checked = 0
@@ -46,7 +47,8 @@ def render(env, svc):
     tags = f"envs/{env}/tags/{svc}.yaml"
     if os.path.exists(os.path.join(ROOT, tags)):
         cmd += ["-f", tags]
-    cmd += ["--set", "image.repository=validate/app", "--set", f"image.tag={svc}-validate"]
+    if svc != "sensor-pantai":
+        cmd += ["--set", "image.repository=validate/app", "--set", f"image.tag={svc}-validate"]
     out = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
     if out.returncode != 0:
         fail(f"{env}/{svc}", f"helm template gagal: {out.stderr.strip().splitlines()[-1]}")
@@ -80,7 +82,9 @@ def check_workload(env, svc, docs):
 
     for c in tpl["spec"]["containers"]:
         image = c["image"]
-        if image.endswith(":latest") or ":" not in image.rsplit("/", 1)[-1]:
+        if role == "sensor" and image != SENSOR_PANTAI_IMAGE:
+            fail(where, f"role=sensor wajib memakai image pinned '{SENSOR_PANTAI_IMAGE}', dapat '{image}'")
+        elif role != "sensor" and (image.endswith(":latest") or ":" not in image.rsplit("/", 1)[-1]):
             fail(where, f"image '{image}' tidak bertag versi")
 
     spec = tpl["spec"]

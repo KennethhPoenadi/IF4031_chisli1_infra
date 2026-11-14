@@ -27,6 +27,7 @@ spec:
                 - svc: notifier
                 - svc: dashboard-updater
                 - svc: situation-analyst
+                - svc: sensor-pantai
   template:
     metadata:
       name: '{{.svc}}-{{.env}}'
@@ -44,7 +45,7 @@ spec:
             - '../../envs/{{.env}}/tags/{{.svc}}.yaml'
           parameters:
             - name: image.repository
-              value: __IMAGE_REPO__
+              value: '{{ if eq .svc "sensor-pantai" }}sustuna/sensor-pantai{{ else }}__IMAGE_REPO__{{ end }}'
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{.namespace}}'

@@ -1,0 +1,36 @@
+image:
+  repository: sustuna/sensor-pantai
+  digest: sha256:51fbd90d3891ad6e9f5768ad330ffb65205644cb29e50da65c7538f2e0b4397d
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+role: sensor
+
+service:
+  port: 8080
+
+telemetry:
+  enabled: false
+
+preStopSleepSeconds: 0
+
+autoscaling:
+  minReplicas: 1
+  maxReplicas: 1
+
+secretRefs: [app-secrets]
+
+livenessProbe:
+  httpGet: { path: /healthz, port: http }
+  initialDelaySeconds: 5
+  periodSeconds: 10
+readinessProbe:
+  httpGet: { path: /healthz, port: http }
+  initialDelaySeconds: 3
+  periodSeconds: 5
+
+networkPolicy:
+  from: [aggregator]
+  fromNamespaces: [tester-agent]
+  to: []

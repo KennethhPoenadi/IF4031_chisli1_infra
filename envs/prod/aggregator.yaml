@@ -33,6 +33,14 @@ env:
   AGGREGATOR_BMKG_TIMEOUT_MS: "2000"
   AGGREGATOR_PVMBG_TIMEOUT_MS: "4000"
   AGGREGATOR_PVMBG_STALE_AFTER_SECONDS: "30"
+  AGGREGATOR_PANTAI_ENABLED: "false"
+  PANTAI_BASE_URL: http://sensor-pantai:8080
+  AGGREGATOR_PANTAI_TIMEOUT_MS: "1500"
+  AGGREGATOR_PANTAI_POLL_INTERVAL_MS: "1000"
+  AGGREGATOR_PANTAI_STALE_AFTER_SECONDS: "30"
+  AGGREGATOR_PANTAI_STATION_CACHE_TTL_SECONDS: "300"
+  AGGREGATOR_PANTAI_CIRCUIT_FAILURES: "3"
+  AGGREGATOR_PANTAI_CIRCUIT_OPEN_SECONDS: "10"
   SITUATION_ANALYST_URL: http://situation-analyst:8094
 
 secretRefs: [app-secrets]
@@ -71,4 +79,4 @@ livenessProbe:
 networkPolicy:
   ingressController: true
   from: [client-facing-api]
-  to: [bmkg-mock, pvmbg-mock, store, rabbitmq, situation-analyst]
+  to: [bmkg-mock, pvmbg-mock, sensor-pantai, store, rabbitmq, situation-analyst]

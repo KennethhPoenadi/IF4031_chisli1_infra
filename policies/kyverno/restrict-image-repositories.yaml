@@ -13,6 +13,13 @@ spec:
           - resources:
               kinds: [Pod]
               namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
+      exclude:
+        any:
+          - resources:
+              kinds: [Pod]
+              selector:
+                matchLabels:
+                  role: sensor
       validate:
         failureAction: Enforce
         message: Image must come from the group's container registry repository.
@@ -23,3 +30,19 @@ spec:
           - list: request.object.spec.initContainers || `[]`
             pattern:
               image: "__IMAGE_REPO__:*"
+    - name: require-pinned-sensor-pantai-image
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: [dev, sistem-informasi-kebencanaan-bnpb]
+              selector:
+                matchLabels:
+                  role: sensor
+      validate:
+        failureAction: Enforce
+        message: Sensor Pantai must use the approved immutable image digest.
+        foreach:
+          - list: request.object.spec.containers
+            pattern:
+              image: "sustuna/sensor-pantai@sha256:51fbd90d3891ad6e9f5768ad330ffb65205644cb29e50da65c7538f2e0b4397d"

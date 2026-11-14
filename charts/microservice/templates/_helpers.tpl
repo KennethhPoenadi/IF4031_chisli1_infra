@@ -36,6 +36,15 @@ app.kubernetes.io/name: {{ include "microservice.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
+{{- define "microservice.image" -}}
+{{- $repository := required "image.repository wajib diisi" .Values.image.repository -}}
+{{- if .Values.image.digest -}}
+{{- printf "%s@%s" $repository .Values.image.digest -}}
+{{- else -}}
+{{- printf "%s:%s" $repository (required "image.tag wajib diisi bila image.digest kosong" .Values.image.tag) -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "microservice.podTemplate" -}}
 metadata:
   labels:
@@ -92,7 +101,7 @@ spec:
     {{- toYaml .Values.podSecurityContext | nindent 4 }}
   containers:
     - name: {{ include "microservice.name" . }}
-      image: "{{ required "image.repository wajib diisi (ApplicationSet, dari scripts/image-repo.sh)" .Values.image.repository }}:{{ required "image.tag wajib diisi (--set image.tag=<service>-<sha>)" .Values.image.tag }}"
+      image: {{ include "microservice.image" . | quote }}
       imagePullPolicy: {{ .Values.image.pullPolicy }}
       {{- with .Values.args }}
       args:

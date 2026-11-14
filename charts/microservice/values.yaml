@@ -1,6 +1,7 @@
 image:
   repository: ""
   tag: ""
+  digest: ""
   pullPolicy: IfNotPresent
 imagePullSecrets:
   - name: registry-credentials
