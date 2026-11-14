@@ -1,0 +1,60 @@
+{{- if and .Values.autoscaling.enabled (eq .Values.kind "Deployment") (eq .Values.autoscaling.engine "keda") }}
+{{- $k := .Values.autoscaling.keda }}
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: {{ include "microservice.name" . }}-rabbitmq
+  labels:
+    {{- include "microservice.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  secretTargetRef:
+    - parameter: host
+      name: {{ $k.hostSecret }}
+      key: host
+---
+# Jumlah replika mengikuti panjang antrean RabbitMQ (pesan siap + belum di-ack).
+# KEDA membuat HPA keda-hpa-<nama> sendiri. HPA chart tidak dirender pada mode ini.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "microservice.name" . }}
+  labels:
+    {{- include "microservice.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "microservice.name" . }}
+  minReplicaCount: {{ .Values.autoscaling.minReplicas }}
+  maxReplicaCount: {{ .Values.autoscaling.maxReplicas }}
+  pollingInterval: {{ $k.pollingInterval }}
+  cooldownPeriod: {{ $k.cooldownPeriod }}
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: {{ $k.cooldownPeriod }}
+          policies:
+            - type: Pods
+              value: 1
+              periodSeconds: 30
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+            - type: Pods
+              value: 2
+              periodSeconds: 15
+  triggers:
+    - type: rabbitmq
+      metadata:
+        protocol: http
+        mode: QueueLength
+        value: {{ $k.queueLength | quote }}
+        queueName: {{ required "autoscaling.keda.queueName wajib diisi pada mode keda" $k.queueName }}
+      authenticationRef:
+        name: {{ include "microservice.name" . }}-rabbitmq
+{{- end }}

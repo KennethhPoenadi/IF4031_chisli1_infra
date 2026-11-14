@@ -5,15 +5,22 @@ metadata:
   name: {{ include "microservice.name" . }}
   labels:
     {{- include "microservice.labels" . | nindent 4 }}
+    {{- if and .Values.autoscaling.enabled (eq .Values.autoscaling.engine "keda") }}
+    autoscaling.bnpb/engine: keda
+    {{- end }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   strategy:
+    {{- if eq .Values.strategy.type "Recreate" }}
+    type: Recreate
+    {{- else }}
     type: RollingUpdate
     rollingUpdate:
       maxSurge: {{ .Values.strategy.maxSurge }}
       maxUnavailable: {{ .Values.strategy.maxUnavailable }}
+    {{- end }}
   selector:
     matchLabels:
       {{- include "microservice.selectorLabels" . | nindent 6 }}

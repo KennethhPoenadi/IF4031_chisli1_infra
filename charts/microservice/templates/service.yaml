@@ -16,3 +16,8 @@ spec:
     - name: http
       port: {{ .Values.service.port }}
       targetPort: http
+    {{- range .Values.service.extraPorts }}
+    - name: {{ .name }}
+      port: {{ .port }}
+      targetPort: {{ .port }}
+    {{- end }}

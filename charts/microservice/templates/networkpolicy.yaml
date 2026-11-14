@@ -11,8 +11,19 @@ spec:
       {{- include "microservice.selectorLabels" . | nindent 6 }}
   policyTypes: [Ingress, Egress]
   {{- $appIngress := or .Values.networkPolicy.ingressController .Values.networkPolicy.from .Values.networkPolicy.fromNamespaces }}
-  {{- if or $appIngress .Values.telemetry.enabled }}
+  {{- if or $appIngress .Values.telemetry.enabled .Values.networkPolicy.extraIngress }}
   ingress:
+    {{- range .Values.networkPolicy.extraIngress }}
+    - from:
+        {{- range .namespaces }}
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ .port }}
+    {{- end }}
     {{- if $appIngress }}
     - from:
         {{- if .Values.networkPolicy.ingressController }}

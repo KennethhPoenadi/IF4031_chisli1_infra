@@ -1,4 +1,4 @@
-{{- if and .Values.autoscaling.enabled (eq .Values.kind "Deployment") }}
+{{- if and .Values.autoscaling.enabled (eq .Values.kind "Deployment") (ne .Values.autoscaling.engine "keda") }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
