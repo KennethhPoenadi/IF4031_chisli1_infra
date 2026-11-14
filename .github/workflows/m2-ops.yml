@@ -1,0 +1,147 @@
+name: M2 Ops
+
+# Job yang menyentuh cluster demo (k3s) dan mengumpulkan bukti Milestone 2.
+# Berjalan di self-hosted runner berlabel k8s-local yang memegang kubeconfig cluster.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "envs/**"
+      - "charts/**"
+      - "policies/**"
+      - "scripts/tester-agent-compat.sh"
+      - "scripts/install-tester-agent.sh"
+  workflow_dispatch:
+    inputs:
+      job:
+        description: Job yang dijalankan
+        type: choice
+        options: [tester-agent-compat, game-day, load-test]
+        default: tester-agent-compat
+      practice:
+        description: "tester-agent-compat: skenario latihan yang ikut dijalankan (kosong = tidak)"
+        type: string
+        default: ""
+      scenarios:
+        description: "game-day: daftar skenario (dipisah spasi)"
+        type: string
+        default: "kill-store wipe-node clock-skew partition kill-leader schema"
+      recovery_seconds:
+        description: "game-day: jendela pemulihan per skenario (detik)"
+        type: string
+        default: "180"
+      k6_script:
+        description: "load-test/game-day: path skrip k6 di repositori aplikasi"
+        type: string
+        default: "tests/k6/p2-sustained.js"
+      vus:
+        description: "load-test: jumlah virtual user"
+        type: string
+        default: "10000"
+      duration:
+        description: "load-test: durasi"
+        type: string
+        default: "150s"
+      scale_plan:
+        description: "load-test: rencana replika Aggregator (detik:replika), kosong = tidak diubah"
+        type: string
+        default: "0:3 50:5 100:2"
+      app_ref:
+        description: "load-test/game-day: ref repositori aplikasi yang diambil skrip k6-nya"
+        type: string
+        default: "main"
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: xops-cluster
+  cancel-in-progress: false
+
+jobs:
+  tester-agent-compat:
+    if: github.event_name == 'push' || inputs.job == 'tester-agent-compat'
+    runs-on: [self-hosted, k8s-local]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/load-env
+      - name: Kontrak lingkungan Tester Agent
+        env:
+          RUN_PRACTICE: ${{ inputs.practice }}
+          OUT_DIR: evidence/tester-agent-compat
+        run: ./scripts/tester-agent-compat.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tester-agent-compat
+          path: evidence/tester-agent-compat
+          retention-days: 30
+
+  game-day:
+    if: github.event_name == 'workflow_dispatch' && inputs.job == 'game-day'
+    runs-on: [self-hosted, k8s-local]
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/load-env
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.APP_REPOSITORY }}
+          ref: ${{ inputs.app_ref }}
+          path: app
+          token: ${{ secrets.APP_READ_TOKEN || github.token }}
+      - name: Game day
+        env:
+          SCENARIOS: ${{ inputs.scenarios }}
+          RECOVERY_SECONDS: ${{ inputs.recovery_seconds }}
+          K6_SCRIPT: ${{ inputs.k6_script && format('app/{0}', inputs.k6_script) || '' }}
+          AUDIT_URL: ${{ vars.AUDIT_URL }}
+          PROM_URL: ${{ vars.PROM_URL }}
+          OUT_DIR: evidence/game-day
+        run: |
+          # Token Audit disimpan di file env runner, sama seperti secret aplikasi lainnya.
+          set -a; source "$HOME/.xops/prod.env"; set +a
+          ./scripts/game-day.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: game-day
+          path: evidence/game-day
+          retention-days: 30
+
+  load-test:
+    if: github.event_name == 'workflow_dispatch' && inputs.job == 'load-test'
+    runs-on: [self-hosted, k8s-local]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/load-env
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.APP_REPOSITORY }}
+          ref: ${{ inputs.app_ref }}
+          path: app
+          token: ${{ secrets.APP_READ_TOKEN || github.token }}
+      - name: Load test
+        env:
+          K6_SCRIPT: app/${{ inputs.k6_script }}
+          VUS: ${{ inputs.vus }}
+          DURATION: ${{ inputs.duration }}
+          BASE_URL: ${{ vars.LOAD_TEST_BASE_URL }}
+          SCALE_PLAN: ${{ inputs.scale_plan }}
+          OUT_DIR: evidence/load-test
+        run: |
+          set -a; source "$HOME/.xops/prod.env"; set +a
+          ./scripts/load-test.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: load-test
+          path: evidence/load-test
+          retention-days: 30
