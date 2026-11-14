@@ -27,6 +27,7 @@ spec:
                 - svc: notifier
                 - svc: dashboard-updater
                 - svc: situation-analyst
+                - svc: satellite-ingestor
   template:
     metadata:
       name: '{{.svc}}-{{.env}}'

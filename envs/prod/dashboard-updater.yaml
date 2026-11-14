@@ -1,5 +1,14 @@
 role: consumer
 
+autoscaling:
+  engine: keda
+  minReplicas: 1
+  maxReplicas: 5
+  keda:
+    queueName: dashboard-updater-queue
+    queueLength: 20
+    cooldownPeriod: 60
+
 service:
   port: 8092
 

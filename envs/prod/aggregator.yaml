@@ -34,6 +34,12 @@ env:
   AGGREGATOR_PVMBG_TIMEOUT_MS: "4000"
   AGGREGATOR_PVMBG_STALE_AFTER_SECONDS: "30"
   SITUATION_ANALYST_URL: http://situation-analyst:8094
+  PVMBG_FIELD_ALIASES: ""
+  PVMBG_FIELD_COERCE: ""
+  DLQ_RETRY_INTERVAL_SECONDS: "5"
+  FIELD_REPORTS_ENABLED: "true"
+  FIELD_REPORT_PREFETCH: "20"
+  FIELD_REPORT_PROCESS_DELAY_MS: "0"
 
 secretRefs: [app-secrets]
 
@@ -70,5 +76,5 @@ livenessProbe:
   periodSeconds: 10
 networkPolicy:
   ingressController: true
-  from: [client-facing-api]
+  from: [client-facing-api, satellite-ingestor]
   to: [bmkg-mock, pvmbg-mock, store, rabbitmq, situation-analyst]

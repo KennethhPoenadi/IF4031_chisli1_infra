@@ -18,9 +18,25 @@ env:
   CLIENT_API_AGGREGATOR_TIMEOUT_MS: "1500"
   CLIENT_API_MAX_INFLIGHT: "200"
   CLIENT_API_REVOCATION_POLL_MS: "1000"
+  FIELD_REPORT_PUBLISH_TIMEOUT_MS: "2000"
+  CLIENT_API_OPS_TIMEOUT_MS: "120000"
 
 secretRefs: [app-secrets]
+
+extraEnv:
+  - name: RABBITMQ_USER
+    valueFrom:
+      secretKeyRef:
+        name: app-secrets
+        key: RABBITMQ_USER
+  - name: RABBITMQ_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: app-secrets
+        key: RABBITMQ_PASSWORD
+  - name: RABBITMQ_URL
+    value: amqp://$(RABBITMQ_USER):$(RABBITMQ_PASSWORD)@rabbitmq:5672/
 networkPolicy:
   ingressController: true
   from: []
-  to: [aggregator, auth-service]
+  to: [aggregator, auth-service, rabbitmq]
