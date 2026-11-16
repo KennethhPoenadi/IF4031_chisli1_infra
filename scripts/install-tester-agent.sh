@@ -16,6 +16,7 @@ if ! grep -q "$IMAGE_DIGEST" "$manifest"; then
 fi
 
 if [ "${1:-}" = "--check" ]; then
+  kubectl create namespace tester-agent --dry-run=client -o yaml | kubectl apply -f - >/dev/null
   kubectl apply --dry-run=server -f "$manifest"
   echo "Manifest Tester Agent valid dan dapat diterapkan (dry-run server)."
   exit 0
