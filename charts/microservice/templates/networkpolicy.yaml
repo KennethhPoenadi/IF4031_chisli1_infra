@@ -88,6 +88,16 @@ spec:
         - protocol: TCP
           port: 443
     {{- end }}
+    {{- if .Values.networkPolicy.kubernetesAPICIDRs }}
+    - to:
+        {{- range .Values.networkPolicy.kubernetesAPICIDRs }}
+        - ipBlock:
+            cidr: {{ . | quote }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: 443
+    {{- end }}
     {{- if .Values.networkPolicy.to }}
     - to:
         {{- range .Values.networkPolicy.to }}
