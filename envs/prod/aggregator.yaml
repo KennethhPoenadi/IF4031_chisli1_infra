@@ -33,6 +33,10 @@ env:
   AGGREGATOR_BMKG_TIMEOUT_MS: "2000"
   AGGREGATOR_PVMBG_TIMEOUT_MS: "4000"
   AGGREGATOR_PVMBG_STALE_AFTER_SECONDS: "30"
+  AGGREGATOR_LEADER_ELECTION_ENABLED: "true"
+  AGGREGATOR_LEADER_LEASE_NAME: aggregator-upstream-poller
+  AGGREGATOR_LEADER_LEASE_DURATION_SECONDS: "15"
+  AGGREGATOR_LEADER_RETRY_PERIOD_SECONDS: "5"
   AGGREGATOR_PANTAI_ENABLED: "false"
   PANTAI_BASE_URL: http://sensor-pantai:8080
   AGGREGATOR_PANTAI_TIMEOUT_MS: "1500"
@@ -86,3 +90,4 @@ networkPolicy:
   ingressController: true
   from: [client-facing-api, satellite-ingestor]
   to: [bmkg-mock, pvmbg-mock, sensor-pantai, store, rabbitmq, situation-analyst]
+  kubernetesAPICIDRs: [10.96.0.1/32, 10.43.0.1/32]
