@@ -142,5 +142,6 @@ networkPolicy:
   fromNamespaces: []
   to: []
   egressHTTPS: false
+  kubernetesAPICIDRs: []
   # Ingress tambahan ke port lain: [{namespaces: [keda], port: 15672}]
   extraIngress: []
