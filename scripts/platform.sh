@@ -37,7 +37,7 @@ helm upgrade --install metrics-server metrics-server/metrics-server \
 echo "==> Kyverno $KYVERNO_VERSION"
 helm upgrade --install kyverno kyverno/kyverno \
   -n kyverno --create-namespace --version "$KYVERNO_VERSION" \
-  --wait --timeout 8m
+  -f platform/kyverno-values.yaml --wait --timeout 8m
 kubectl wait --for=condition=Available deployment --all -n kyverno --timeout=300s
 
 # KEDA harus terpasang sebelum Argo CD menyinkronkan ScaledObject konsumer.
