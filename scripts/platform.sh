@@ -19,7 +19,7 @@ helm repo add argo           https://argoproj.github.io/argo-helm --force-update
 helm repo add kedacore       https://kedacore.github.io/charts --force-update >/dev/null
 helm repo update >/dev/null
 
-if kubectl get deployment -n kyverno >/dev/null 2>&1; then
+if [ -n "$(kubectl get deployment -n kyverno -o name 2>/dev/null)" ]; then
   echo "==> Menunggu Kyverno siap"
   kubectl wait --for=condition=Available deployment --all -n kyverno --timeout=300s
 fi
