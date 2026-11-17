@@ -24,7 +24,7 @@ Kode aplikasi dan pipeline build image ada di repositori aplikasi. Dokumentasi l
 ## Desain singkat
 
 - **GitOps, pull.** Pipeline hanya menulis ke Git. Argo CD di dalam cluster menarik konfigurasi dari repositori ini (`main`) dan menerapkannya dengan `prune` dan `selfHeal`, sehingga runner CI tidak memerlukan akses ke API server.
-- **Rilis adalah commit tag.** Workflow aplikasi mengirim `repository_dispatch` (`deploy-dev`) berisi `image_tag` ke repo ini. Job `release-dev` menulis `envs/dev/tags/<service>.yaml` lalu commit `[skip ci]`. Promosi ke prod dilakukan manual lewat workflow `Release` (`target: prod`), yang menyalin tag dari dev, menunggu persetujuan reviewer environment `prod-release`, dan hanya berjalan sukses untuk akun `PROD_APPROVER`.
+- **Rilis adalah commit tag.** Workflow aplikasi mengirim `repository_dispatch` (`deploy-dev`, nama event dipertahankan agar repo aplikasi tidak berubah) berisi `image_tag` ke repo ini. Job `release-prod` langsung menulis `envs/prod/tags/<service>.yaml` lalu commit `[skip ci]`, tanpa tahap dev dan tanpa persetujuan manual. Rilis manual: workflow `Release` → Run workflow → isi `image_tag`.
 - **Satu chart untuk semua workload.** Perbedaan antar service dan environment hanya ada di `envs/`.
 - **Dua environment.** `dev` memakai namespace `dev`. `prod` memakai namespace kontrak M2, `sistem-informasi-kebencanaan-bnpb` (dipetakan oleh `ns_for` di `scripts/env.sh` dan oleh `argocd/applicationset.yaml`). Untuk demo, hanya environment `prod` yang perlu berjalan.
 - **Kyverno `Enforce`.** Pelanggaran ditolak saat admission, meskipun lolos CI.
@@ -70,8 +70,7 @@ Didefinisikan di `.github/workflows/ci.yml` (validate dan platform) dan `.github
 | `policies` | `policies` | Menerapkan policy, menunggu Ready, lalu menguji penolakan manifest pelanggaran di cluster |
 | `secrets` | `secrets` (matriks `dev`, `prod`) | Secret `registry-credentials` (pull image) dan `app-secrets` per namespace |
 | `bootstrap` | `bootstrap-argocd` | Menerapkan `ApplicationSet` |
-| `release` | `release-dev` | Menulis tag dev, dipicu oleh workflow aplikasi |
-| `promote` | `release-prod` | Menyalin tag dev ke prod, manual |
+| `release` | `release-prod` | Menulis tag prod langsung, dipicu oleh workflow aplikasi atau manual |
 
 Push ke `main` menjalankan `validate` sampai `bootstrap`; pull request hanya menjalankan `validate` (di runner GitHub). Workflow `Release` dipicu aplikasi atau manual. Job yang menyentuh cluster berjalan di self-hosted runner berlabel `k8s-local`, karena API server kind hanya terbuka di `127.0.0.1`. Pastikan `docker`, `kubectl`, `helm`, `terraform`, dan `kind` ada di `PATH` service runner (file `.path` di folder runner).
 
@@ -127,11 +126,10 @@ Diisi di Settings → Secrets and variables → Actions. Nilainya tidak disimpan
 
 | Nama | Jenis | Fungsi |
 | --- | --- | --- |
-| `GITOPS_TOKEN` | Secret | Fine-grained PAT (Contents read/write pada repo ini) untuk push commit tag dari `release-*` |
+| `GITOPS_TOKEN` | Secret | Fine-grained PAT (Contents read/write pada repo ini) untuk push commit tag dari `release-prod` |
 | `APP_IMAGE_NAME` | Variable | Nama image di `ghcr.io/<owner>/`. Harus sama dengan yang dibangun repositori aplikasi |
-| `PROD_APPROVER` | Variable | Username GitHub penyetuju promosi ke prod |
 
-Environment (Settings → Environments): hanya `prod-release` yang perlu dibuat, dengan required reviewers sebagai gerbang promosi. Environment `dev` dibuat otomatis oleh GitHub saat `release-dev` pertama kali jalan.
+Tidak ada GitHub Environment yang perlu dibuat: rilis ke prod berjalan tanpa gerbang persetujuan.
 
 Secret aplikasi (daftar di `scripts/secret-keys.txt`) dan kredensial pull image **tidak** disimpan di GitHub. Simpan di mesin self-hosted runner, di luar repo:
 
