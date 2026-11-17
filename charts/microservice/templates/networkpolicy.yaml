@@ -98,6 +98,18 @@ spec:
         - protocol: TCP
           port: 443
     {{- end }}
+    {{- if .Values.networkPolicy.kubernetesAPINodeCIDRs }}
+    # NetworkPolicy dievaluasi setelah DNAT: tujuan sebenarnya adalah endpoint API server (IP node:6443),
+    # bukan ClusterIP Service `kubernetes`. Tanpa aturan ini koneksi ke API (Lease, daftar pod) di-drop diam-diam.
+    - to:
+        {{- range .Values.networkPolicy.kubernetesAPINodeCIDRs }}
+        - ipBlock:
+            cidr: {{ . | quote }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: 6443
+    {{- end }}
     {{- if .Values.networkPolicy.to }}
     - to:
         {{- range .Values.networkPolicy.to }}

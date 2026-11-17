@@ -91,3 +91,5 @@ networkPolicy:
   from: [client-facing-api, satellite-ingestor]
   to: [bmkg-mock, pvmbg-mock, sensor-pantai, store, rabbitmq, situation-analyst]
   kubernetesAPICIDRs: [10.96.0.1/32, 10.43.0.1/32]
+  # Endpoint API server (setelah DNAT): jaringan docker kind dan jaringan host-only node k3s.
+  kubernetesAPINodeCIDRs: [172.20.0.0/16, 192.168.56.0/24]

@@ -143,5 +143,7 @@ networkPolicy:
   to: []
   egressHTTPS: false
   kubernetesAPICIDRs: []
+  # CIDR node control-plane yang melayani API server pada port 6443 (kind: jaringan docker, k3s: jaringan node).
+  kubernetesAPINodeCIDRs: []
   # Ingress tambahan ke port lain: [{namespaces: [keda], port: 15672}]
   extraIngress: []
