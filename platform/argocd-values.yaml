@@ -8,6 +8,19 @@ configs:
       hs.status = "Healthy"
       hs.message = "Ingress dilayani Traefik hostPort tanpa load balancer"
       return hs
+    # HPA dan ScaledObject dibuat di sync-wave sebelum Deployment (agar lolos Kyverno require-hpa).
+    # Target-nya belum ada saat itu, sehingga kondisi bawaan menandainya Degraded dan memblokir wave
+    # berikutnya (deadlock). Anggap sehat; kesehatan workload dinilai dari Deployment itu sendiri.
+    resource.customizations.health.autoscaling_HorizontalPodAutoscaler: |
+      hs = {}
+      hs.status = "Healthy"
+      hs.message = "HPA dianggap sehat; target dibuat di wave berikutnya"
+      return hs
+    resource.customizations.health.keda.sh_ScaledObject: |
+      hs = {}
+      hs.status = "Healthy"
+      hs.message = "ScaledObject dianggap sehat; target dibuat di wave berikutnya"
+      return hs
 dex:
   enabled: false
 notifications:
