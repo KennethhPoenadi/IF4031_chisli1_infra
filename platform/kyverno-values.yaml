@@ -1,0 +1,14 @@
+# Batas memori bawaan controller Kyverno (128Mi) terlalu kecil: pod terus melepas dan memuat ulang cache,
+# memicu I/O disk sangat tinggi (~800 MB/detik), CPU 1 core penuh, dan memperlambat apiserver di node tunggal.
+reportsController:
+  resources:
+    requests: { cpu: 100m, memory: 64Mi }
+    limits: { memory: 384Mi }
+backgroundController:
+  resources:
+    requests: { cpu: 100m, memory: 64Mi }
+    limits: { memory: 384Mi }
+cleanupController:
+  resources:
+    requests: { cpu: 100m, memory: 64Mi }
+    limits: { memory: 256Mi }

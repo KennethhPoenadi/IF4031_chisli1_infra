@@ -71,8 +71,7 @@ Didefinisikan di `.github/workflows/ci.yml` (validate dan platform) dan `.github
 | `policies` | `policies` | Menerapkan policy, menunggu Ready, lalu menguji penolakan manifest pelanggaran di cluster |
 | `secrets` | `secrets` (matriks `dev`, `prod`) | Secret `registry-credentials` (pull image) dan `app-secrets` per namespace |
 | `bootstrap` | `bootstrap-argocd` | Menerapkan `ApplicationSet` |
-| `release` | `release-dev` | Menulis tag dev, dipicu oleh workflow aplikasi |
-| `promote` | `release-prod` | Menyalin tag dev ke prod, manual |
+| `release` | `release-prod` | Menulis tag prod langsung, dipicu oleh workflow aplikasi atau manual |
 
 Push ke `main` menjalankan `validate` sampai `bootstrap`; pull request hanya menjalankan `validate` (di runner GitHub). Workflow `Release` dipicu aplikasi atau manual. Job yang menyentuh cluster berjalan di self-hosted runner berlabel `k8s-local`. Untuk development, pastikan `docker`, `kubectl`, `helm`, `terraform`, dan `kind` ada di `PATH`. Untuk demo K3s, runner memerlukan `kubectl`, `helm`, akses jaringan ke API Node A, dan kubeconfig yang valid.
 
@@ -128,11 +127,10 @@ Diisi di Settings → Secrets and variables → Actions. Nilainya tidak disimpan
 
 | Nama | Jenis | Fungsi |
 | --- | --- | --- |
-| `GITOPS_TOKEN` | Secret | Fine-grained PAT (Contents read/write pada repo ini) untuk push commit tag dari `release-*` |
+| `GITOPS_TOKEN` | Secret | Fine-grained PAT (Contents read/write pada repo ini) untuk push commit tag dari `release-prod` |
 | `APP_IMAGE_NAME` | Variable | Nama image di `ghcr.io/<owner>/`. Harus sama dengan yang dibangun repositori aplikasi |
-| `PROD_APPROVER` | Variable | Username GitHub penyetuju promosi ke prod |
 
-Environment (Settings → Environments): hanya `prod-release` yang perlu dibuat, dengan required reviewers sebagai gerbang promosi. Environment `dev` dibuat otomatis oleh GitHub saat `release-dev` pertama kali jalan.
+Tidak ada GitHub Environment yang perlu dibuat: rilis ke prod berjalan tanpa gerbang persetujuan.
 
 Secret aplikasi (daftar di `scripts/secret-keys.txt`) dan kredensial pull image **tidak** disimpan di GitHub. Simpan di mesin self-hosted runner, di luar repo:
 

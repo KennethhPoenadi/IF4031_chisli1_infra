@@ -19,9 +19,10 @@ fi
 
 mkdir -p "envs/$ENV_NAME/tags"
 for s in "${APP_SERVICES[@]}"; do
-  if [ "$ENV_NAME" = "dev" ]; then
-    : "${SHA:?dev butuh sha image}"
+  if [ -n "$SHA" ]; then
     tag="$s-$SHA"
+  elif [ "$ENV_NAME" = "dev" ]; then
+    : "${SHA:?dev butuh sha image}"
   else
     src="envs/dev/tags/$s.yaml"
     if [ ! -f "$src" ]; then echo "WARN: $s belum ada di dev, skip"; continue; fi
