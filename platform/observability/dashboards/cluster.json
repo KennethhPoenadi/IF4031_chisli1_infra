@@ -18,7 +18,7 @@
   "graphTooltip": 1,
   "panels": [
     {
-      "id": 31,
+      "id": 41,
       "type": "row",
       "title": "Node",
       "collapsed": false,
@@ -31,7 +31,7 @@
       "panels": []
     },
     {
-      "id": 32,
+      "id": 42,
       "type": "stat",
       "title": "Node siap",
       "description": "Satu kotak per node. Saat Tester Agent mematikan node, kotaknya menjadi merah.",
@@ -106,7 +106,7 @@
       ]
     },
     {
-      "id": 33,
+      "id": 43,
       "type": "timeseries",
       "title": "CPU node",
       "description": "",
@@ -161,7 +161,7 @@
       ]
     },
     {
-      "id": 34,
+      "id": 44,
       "type": "timeseries",
       "title": "Memori node terpakai",
       "description": "",
@@ -216,7 +216,7 @@
       ]
     },
     {
-      "id": 35,
+      "id": 45,
       "type": "row",
       "title": "Pod aplikasi",
       "collapsed": false,
@@ -229,7 +229,7 @@
       "panels": []
     },
     {
-      "id": 36,
+      "id": 46,
       "type": "timeseries",
       "title": "Pod per node",
       "description": "Sebaran pod antar node. Setelah satu node mati, pod berpindah ke node lain.",
@@ -283,7 +283,7 @@
       ]
     },
     {
-      "id": 37,
+      "id": 47,
       "type": "timeseries",
       "title": "Pod per role",
       "description": "Label role yang dipakai Tester Agent: aggregator, store, broker, consumer, api, mock, sensor, other.",
@@ -337,7 +337,7 @@
       ]
     },
     {
-      "id": 38,
+      "id": 48,
       "type": "timeseries",
       "title": "Pod menurut fase",
       "description": "",
@@ -395,7 +395,7 @@
       ]
     },
     {
-      "id": 39,
+      "id": 49,
       "type": "timeseries",
       "title": "Restart container (10 menit terakhir)",
       "description": "Pod yang terus restart menandakan crash atau pembunuhan oleh Tester Agent.",

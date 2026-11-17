@@ -179,6 +179,37 @@ def pipeline():
             ("sum(increase(store_repair_replicated_total[5m]))", "salinan dibuat (5 menit)"),
             ("sum(increase(store_repair_removed_total[5m]))", "salinan usang dihapus (5 menit)")],
             12, 36, unit="short", minimum=0, desc="Aktivitas pemulihan setelah node hilang atau ditambah."),
+        row("Feed Satelit (P4)", 44),
+        stat("Ketertinggalan (kejadian)", "max(satellite_offset_lag)", 0, 45, w=6, unit="short",
+             desc="Jumlah kejadian feed yang sudah terbit tetapi belum tersimpan. Naik saat lonjakan, harus kembali ke 0.",
+             steps=[{"color": "green", "value": None}, {"color": "orange", "value": 500}, {"color": "red", "value": 5000}]),
+        stat("Ketertinggalan (waktu kejadian)", "max(satellite_event_time_lag_seconds)", 6, 45, w=6, unit="s", decimals=0,
+             desc="Selisih waktu virtual feed dengan waktu deteksi terbaru yang tersimpan. Target: kembali mutakhir ≤ 60 detik setelah lonjakan.",
+             steps=[{"color": "green", "value": None}, {"color": "orange", "value": 30}, {"color": "red", "value": 60}]),
+        stat("p95 masuk sampai tersimpan", "histogram_quantile(0.95, sum by (le) (rate(satellite_ingest_to_store_seconds_bucket[5m])))",
+             12, 45, w=6, unit="s", decimals=2,
+             desc="Detik dari kejadian diterima dari feed sampai HazardEvent tersimpan (jendela 5 menit)."),
+        stat("Batch gagal (per menit)", "sum(rate(satellite_batch_failures_total[5m])) * 60", 18, 45, w=6, unit="short", decimals=2,
+             desc="Pengiriman batch ke Aggregator yang gagal lalu diulang. Tidak ada data yang hilang karena batch diulang.",
+             steps=[{"color": "green", "value": None}, {"color": "orange", "value": 1}]),
+        timeseries("Ketertinggalan menurut waktu kejadian", [
+            ("max(satellite_event_time_lag_seconds)", "detik tertinggal")], 0, 49, unit="s", minimum=0,
+            thresholds=[(60, "red")], desc="Garis merah: batas 60 detik untuk kembali mutakhir setelah lonjakan percepatan 60x."),
+        timeseries("Latensi masuk sampai tersimpan p50 / p95 / p99", [
+            ("histogram_quantile(0.50, sum by (le) (rate(satellite_ingest_to_store_seconds_bucket[2m])))", "p50"),
+            ("histogram_quantile(0.95, sum by (le) (rate(satellite_ingest_to_store_seconds_bucket[2m])))", "p95"),
+            ("histogram_quantile(0.99, sum by (le) (rate(satellite_ingest_to_store_seconds_bucket[2m])))", "p99")],
+            12, 49, unit="s", minimum=0),
+        timeseries("Offset feed: terbaru vs tersimpan", [
+            ("max(satellite_latest_offset)", "terbaru di feed"),
+            ("max(satellite_committed_offset)", "tersimpan")], 0, 57, unit="short", minimum=0,
+            desc="Selisih kedua garis adalah ketertinggalan. Offset naik monoton tanpa celah."),
+        timeseries("Perubahan kebakaran per operasi", [
+            ("sum by (op) (rate(satellite_fire_changes_total[1m]))", "{{op}}")], 12, 57, unit="ops", stack=True,
+            desc="upsert: kebakaran dibuat atau diperbarui. delete: kebakaran ditarik atau menyusut di bawah syarat."),
+        timeseries("Keadaan pembentukan kebakaran", [
+            ("max by (kind) (satellite_engine)", "{{kind}}")], 0, 65, w=24, unit="short", minimum=0,
+            desc="Kebakaran aktif, deteksi tunggal, deteksi terlambat, dan seterusnya."),
     ]
     write("pipeline.json", dashboard(
         "bnpb-pipeline", "BNPB / Alur data dan jalur peringatan", panels,
