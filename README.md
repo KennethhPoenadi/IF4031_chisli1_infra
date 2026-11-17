@@ -1,6 +1,6 @@
 # infra
 
-Konfigurasi infrastruktur dan deployment untuk platform agregasi informasi kebencanaan (tujuh service Go, MongoDB, RabbitMQ). Repositori ini berisi cluster Kubernetes (kind) yang ditulis sebagai Terraform, platform pendukungnya, chart Helm, konfigurasi dev dan prod, definisi Argo CD, policy Kyverno, dan workflow GitHub Actions yang menjalankan semuanya.
+Konfigurasi infrastruktur dan deployment untuk platform agregasi informasi kebencanaan (tujuh service Go, MongoDB, RabbitMQ). Repositori ini mendukung cluster `kind` untuk development dan cluster K3s multi-node untuk demo, beserta platform pendukung, chart Helm, konfigurasi dev dan prod, definisi Argo CD, policy Kyverno, dan workflow GitHub Actions.
 
 Kode aplikasi dan pipeline build image ada di repositori aplikasi. Dokumentasi lengkap (arsitektur, bukti, keterbatasan) ada di repositori `docs`.
 
@@ -9,6 +9,7 @@ Kode aplikasi dan pipeline build image ada di repositori aplikasi. Dokumentasi l
 | Path | Isi |
 | --- | --- |
 | `terraform/` | Cluster kind sebagai resource Terraform: node, label ingress, pemetaan port 80/443, kubeconfig |
+| `docs/k3s-cluster.md` | Pembuatan cluster K3s dua node dan koneksi self-hosted runner |
 | `platform/` | Values dan versi chart Traefik, metrics-server, Kyverno, dan Argo CD (`versions.env`) |
 | `platform/observability/` | Values Prometheus, Loki, Tempo, Alloy, Grafana, dan dashboard sebagai kode (`dashboards/*.json`, dihasilkan `scripts/gen-dashboards.py`) |
 | `charts/microservice/` | Satu chart generik: Deployment atau StatefulSet, Service, Ingress, HPA, ConfigMap, NetworkPolicy, PodDisruptionBudget |
@@ -23,8 +24,8 @@ Kode aplikasi dan pipeline build image ada di repositori aplikasi. Dokumentasi l
 
 ## Desain singkat
 
-- **GitOps, pull.** Pipeline hanya menulis ke Git. Argo CD di dalam cluster menarik konfigurasi dari repositori ini (`main`) dan menerapkannya dengan `prune` dan `selfHeal`, sehingga runner CI tidak memerlukan akses ke API server.
-- **Rilis adalah commit tag.** Workflow aplikasi mengirim `repository_dispatch` (`deploy-dev`, nama event dipertahankan agar repo aplikasi tidak berubah) berisi `image_tag` ke repo ini. Job `release-prod` langsung menulis `envs/prod/tags/<service>.yaml` lalu commit `[skip ci]`, tanpa tahap dev dan tanpa persetujuan manual. Rilis manual: workflow `Release` → Run workflow → isi `image_tag`.
+- **GitOps, pull.** Argo CD di dalam cluster menarik konfigurasi dari repositori ini (`main`) dan menerapkannya dengan `prune` dan `selfHeal`. Self-hosted runner tetap memerlukan akses API untuk bootstrap platform, policy, Secret, dan pengujian M2; sinkronisasi workload berikutnya dilakukan Argo CD.
+- **Rilis adalah commit tag.** Workflow aplikasi mengirim `repository_dispatch` (`deploy-dev`) berisi `image_tag` ke repo ini. Job `release-dev` menulis `envs/dev/tags/<service>.yaml` lalu commit `[skip ci]`. Promosi ke prod dilakukan manual lewat workflow `Release` (`target: prod`), yang menyalin tag dari dev, menunggu persetujuan reviewer environment `prod-release`, dan hanya berjalan sukses untuk akun `PROD_APPROVER`.
 - **Satu chart untuk semua workload.** Perbedaan antar service dan environment hanya ada di `envs/`.
 - **Dua environment.** `dev` memakai namespace `dev`. `prod` memakai namespace kontrak M2, `sistem-informasi-kebencanaan-bnpb` (dipetakan oleh `ns_for` di `scripts/env.sh` dan oleh `argocd/applicationset.yaml`). Untuk demo, hanya environment `prod` yang perlu berjalan.
 - **Kyverno `Enforce`.** Pelanggaran ditolak saat admission, meskipun lolos CI.
@@ -64,7 +65,7 @@ Didefinisikan di `.github/workflows/ci.yml` (validate dan platform) dan `.github
 | --- | --- | --- |
 | `validate` | `validate` | Sintaks script, `terraform validate`, `helm lint`, cakupan HPA, `kubeconform`, `kyverno test` |
 | `mirror` | `mirror-images` | Menyalin MongoDB dan RabbitMQ ke repositori image kelompok di `ghcr.io` |
-| `cluster` | `cluster` | `terraform apply` untuk cluster kind |
+| `cluster` | `cluster` | Membuat cluster `kind` untuk development atau memvalidasi cluster K3s demo |
 | `platform` | `platform` | Traefik, metrics-server, Kyverno, Argo CD, dan namespace `dev` dan `prod` |
 | `observability` | `observability` | Grafana, Prometheus, Loki, Tempo, dan Alloy di namespace `observability`. Tidak memblokir deploy aplikasi (`continue-on-error`) |
 | `policies` | `policies` | Menerapkan policy, menunggu Ready, lalu menguji penolakan manifest pelanggaran di cluster |
@@ -72,7 +73,7 @@ Didefinisikan di `.github/workflows/ci.yml` (validate dan platform) dan `.github
 | `bootstrap` | `bootstrap-argocd` | Menerapkan `ApplicationSet` |
 | `release` | `release-prod` | Menulis tag prod langsung, dipicu oleh workflow aplikasi atau manual |
 
-Push ke `main` menjalankan `validate` sampai `bootstrap`; pull request hanya menjalankan `validate` (di runner GitHub). Workflow `Release` dipicu aplikasi atau manual. Job yang menyentuh cluster berjalan di self-hosted runner berlabel `k8s-local`, karena API server kind hanya terbuka di `127.0.0.1`. Pastikan `docker`, `kubectl`, `helm`, `terraform`, dan `kind` ada di `PATH` service runner (file `.path` di folder runner).
+Push ke `main` menjalankan `validate` sampai `bootstrap`; pull request hanya menjalankan `validate` (di runner GitHub). Workflow `Release` dipicu aplikasi atau manual. Job yang menyentuh cluster berjalan di self-hosted runner berlabel `k8s-local`. Untuk development, pastikan `docker`, `kubectl`, `helm`, `terraform`, dan `kind` ada di `PATH`. Untuk demo K3s, runner memerlukan `kubectl`, `helm`, akses jaringan ke API Node A, dan kubeconfig yang valid.
 
 ## Observabilitas
 
@@ -152,11 +153,11 @@ Semua image berada di satu repositori, `ghcr.io/<owner>/<APP_IMAGE_NAME>` (nama 
 
 ## Menjalankan lokal
 
-Prasyarat: Docker (misalnya Colima), `terraform`, `kubectl`, `helm`, dan `kyverno` CLI. Semua script memuat `scripts/env.sh`, yang mengarahkan `KUBECONFIG` ke `~/.kube/xops-config`.
+Prasyarat development: Docker (misalnya Colima), `terraform`, `kubectl`, `helm`, dan `kyverno` CLI. Semua script memuat `scripts/env.sh`. `KUBECONFIG` dapat diberikan dari environment dan memakai `~/.kube/xops-config` bila tidak ditentukan.
 
 ```
 ./scripts/validate.sh                    # lint, validasi HPA, kubeconform, kyverno test
-./scripts/cluster-up.sh                  # terraform apply, membuat cluster kind
+CLUSTER_PROVIDER=kind ./scripts/cluster-up.sh  # terraform apply, membuat cluster kind
 ./scripts/platform.sh                    # Traefik, metrics-server, Kyverno, Argo CD
 
 export REGISTRY_OWNER=<owner-github> APP_IMAGE_NAME=<nama-image>
@@ -184,6 +185,12 @@ Menghapus cluster:
 ```
 
 `scripts/cluster-up-kind.sh` adalah jalur cadangan yang membuat cluster langsung dengan CLI kind, bila Terraform tidak dapat dipakai.
+
+Untuk cluster demo multi-node, ikuti [panduan K3s](docs/k3s-cluster.md). Setelah kubeconfig tersedia pada runner, validasi dengan:
+
+```
+CLUSTER_PROVIDER=k3s ./scripts/cluster-up.sh
+```
 
 ### Uji autoscaling
 

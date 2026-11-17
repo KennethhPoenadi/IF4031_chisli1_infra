@@ -55,6 +55,8 @@ jobs:
     concurrency:
       group: xops-cluster
       cancel-in-progress: false
+    env:
+      CLUSTER_PROVIDER: ${{ vars.CLUSTER_PROVIDER || 'kind' }}
     steps:
       - uses: actions/checkout@v4
       - run: ./scripts/cluster-up.sh

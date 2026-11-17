@@ -1,0 +1,132 @@
+# Cluster K3s
+
+Cluster demo terdiri dari minimal dua node Linux dengan kernel terpisah. Target awalnya adalah:
+
+| Node | Peran | Penempatan |
+| --- | --- | --- |
+| `chisli-control` | control-plane sekaligus worker | Ubuntu VM atau Linux native pada host A |
+| `chisli-worker-1` | worker non-control-plane | Ubuntu VM atau Linux native pada host A/B |
+
+Dua VM pada satu host fisik memenuhi kebutuhan kernel terpisah. Bonus host fisik berbeda baru terpenuhi bila kedua node berjalan pada host A dan B yang berbeda. Isi jenis VM, host fisik, CPU, RAM, dan IP aktual di README sebelum demo.
+
+## Prasyarat jaringan
+
+- Kedua node memiliki hostname dan IP LAN yang unik serta stabil.
+- Runner dapat mengakses Node A pada TCP `6443`.
+- Antar-node mengizinkan TCP `6443`, UDP `8472`, dan TCP `10250`.
+- UDP `8472` tidak dibuka ke internet.
+- Gunakan bridged networking atau external virtual switch bila node berupa VM.
+
+## 1. Memasang Node A
+
+Jalankan pada Linux Node A dari checkout repositori infra:
+
+```bash
+sudo env \
+  K3S_NODE_IP=192.168.1.20 \
+  K3S_NODE_NAME=chisli-control \
+  ./scripts/up.sh
+```
+
+Ganti IP dengan IP LAN aktual Node A. Script memasang K3s server, menonaktifkan komponen bawaan yang akan dipasang ulang oleh platform, dan memberi label `ingress-ready=true`.
+
+Periksa hasil dan baca token join tanpa menyalinnya ke log:
+
+```bash
+sudo k3s kubectl get nodes -o wide
+sudo cat /var/lib/rancher/k3s/server/node-token
+```
+
+## 2. Menggabungkan Node B
+
+Jalankan pada Linux Node B:
+
+```bash
+sudo env \
+  K3S_SERVER_URL=https://192.168.1.20:6443 \
+  K3S_NODE_IP=192.168.1.21 \
+  K3S_NODE_NAME=chisli-worker-1 \
+  ./scripts/node-join.sh
+```
+
+Script meminta token secara interaktif tanpa menampilkannya. Jangan menyimpan token di repository atau menaruhnya langsung pada command history.
+
+Verifikasi dari Node A:
+
+```bash
+sudo k3s kubectl get nodes -o wide
+```
+
+Kedua node harus berstatus `Ready` sebelum melanjutkan.
+
+## 3. Memberikan akses kepada runner
+
+Kubeconfig server berada di `/etc/rancher/k3s/k3s.yaml`. Pada Node A, buat salinan sementara yang hanya dapat dibaca oleh pengguna SSH:
+
+```bash
+sudo install -m 600 -o "$USER" -g "$(id -gn)" \
+  /etc/rancher/k3s/k3s.yaml "$HOME/xops-config"
+```
+
+Pada runner, ambil file tersebut, ubah alamat API menjadi IP LAN Node A, lalu hapus salinan pada Node A:
+
+```bash
+mkdir -p "$HOME/.kube"
+scp user@192.168.1.20:~/xops-config "$HOME/.kube/xops-config"
+ssh user@192.168.1.20 'rm -f "$HOME/xops-config"'
+perl -pi -e 's#https://127\.0\.0\.1:6443#https://192.168.1.20:6443#' \
+  "$HOME/.kube/xops-config"
+```
+
+Ganti `user` dan IP dengan nilai aktual. Batasi permission dan uji akses:
+
+```bash
+chmod 600 "$HOME/.kube/xops-config"
+KUBECONFIG="$HOME/.kube/xops-config" kubectl get nodes -o wide
+```
+
+Kubeconfig memberikan hak administratif ke cluster. Jangan commit, unggah sebagai artifact, atau tampilkan isinya di log workflow.
+
+## 4. Mengaktifkan mode K3s di GitHub Actions
+
+Buat repository variable pada repo infra:
+
+```text
+Settings -> Secrets and variables -> Actions -> Variables
+CLUSTER_PROVIDER=k3s
+```
+
+Job `cluster` kemudian hanya memvalidasi cluster yang sudah ada. Ia tidak memasang K3s, membuat VM, atau menghapus node.
+
+Validasi yang sama dapat dijalankan pada runner:
+
+```bash
+CLUSTER_PROVIDER=k3s ./scripts/cluster-up.sh
+```
+
+Script menolak cluster bila node kurang dari dua, ada node yang tidak `Ready`, topologi tidak mempunyai control-plane dan worker terpisah, label ingress tidak ada, atau cluster terdeteksi memakai `kind`/`k3d`.
+
+## 5. Deploy platform
+
+Setelah validasi cluster berhasil, pipeline melanjutkan pemasangan platform, policy, Secret, dan Argo CD. Untuk menjalankannya manual dari runner:
+
+```bash
+./scripts/platform.sh
+ENV_FILE="$HOME/.xops/prod.env" ./scripts/create-secrets.sh prod
+./scripts/bootstrap-argocd.sh
+```
+
+Periksa keadaan akhir:
+
+```bash
+kubectl get nodes -o wide
+kubectl get pods -A -o wide
+kubectl get applications -n argocd
+kubectl get pods,hpa,ingress -n sistem-informasi-kebencanaan-bnpb
+```
+
+## Batas otomatisasi
+
+`scripts/cluster-down.sh` hanya ditujukan untuk cluster development `kind`. Cluster K3s dihentikan atau dihapus langsung pada masing-masing VM dengan prosedur uninstall K3s, dan tidak dilakukan oleh pipeline agar node demo tidak terhapus akibat sebuah job CI.
+
+Pemeriksaan otomatis tidak dapat membuktikan bahwa dua VM benar-benar memakai kernel atau host fisik yang berbeda. Bukti topologi tetap dikumpulkan dari konfigurasi VM/host dan output setiap node saat demo.
