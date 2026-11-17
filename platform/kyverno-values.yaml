@@ -1,14 +1,15 @@
-# Batas memori bawaan controller Kyverno (128Mi) terlalu kecil: pod terus melepas dan memuat ulang cache,
-# memicu I/O disk sangat tinggi (~800 MB/detik), CPU 1 core penuh, dan memperlambat apiserver di node tunggal.
+# Kyverno ringan: seluruh policy di repo ini memvalidasi saat admission (failureAction: Enforce), sehingga
+# hanya admission controller yang dibutuhkan. Reports, background, dan cleanup controller tidak dipakai
+# (tidak ada policy generate/mutate-existing dan laporan policy tidak dikonsumsi), dan sebelumnya
+# justru menjadi sumber I/O disk dan CPU yang tinggi di node tunggal.
 reportsController:
-  resources:
-    requests: { cpu: 100m, memory: 64Mi }
-    limits: { memory: 384Mi }
+  enabled: false
 backgroundController:
-  resources:
-    requests: { cpu: 100m, memory: 64Mi }
-    limits: { memory: 384Mi }
+  enabled: false
 cleanupController:
-  resources:
-    requests: { cpu: 100m, memory: 64Mi }
-    limits: { memory: 256Mi }
+  enabled: false
+admissionController:
+  container:
+    resources:
+      requests: { cpu: 100m, memory: 128Mi }
+      limits: { memory: 384Mi }

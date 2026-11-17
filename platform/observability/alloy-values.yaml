@@ -12,7 +12,7 @@ alloy:
     - { name: otlp-http, port: 4318, targetPort: 4318, protocol: TCP }
   resources:
     requests: { cpu: 50m, memory: 96Mi }
-    limits: { memory: 256Mi }
+    limits: { cpu: 500m, memory: 256Mi }
   configMap:
     create: true
     content: |
@@ -29,7 +29,7 @@ alloy:
         targets = discovery.kubernetes.pods.targets
         rule {
           source_labels = ["__meta_kubernetes_namespace"]
-          regex         = "(sistem-informasi-kebencanaan-bnpb|dev|tester-agent|observability|argocd|kyverno)"
+          regex         = "(sistem-informasi-kebencanaan-bnpb|tester-agent)"
           action        = "keep"
         }
         rule {
@@ -93,11 +93,23 @@ alloy:
           endpoint = "0.0.0.0:4318"
         }
         output {
+          traces = [otelcol.processor.memory_limiter.default.input]
+        }
+      }
+
+      // Batas memori sebelum batch: saat beban tinggi collector menolak data baru, bukan membengkak lalu OOM.
+      otelcol.processor.memory_limiter "default" {
+        check_interval         = "1s"
+        limit_percentage       = 75
+        spike_limit_percentage = 20
+        output {
           traces = [otelcol.processor.batch.default.input]
         }
       }
 
       otelcol.processor.batch "default" {
+        send_batch_size = 512
+        timeout         = "5s"
         output {
           traces = [otelcol.exporter.otlp.tempo.input]
         }

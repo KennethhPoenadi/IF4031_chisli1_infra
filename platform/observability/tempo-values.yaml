@@ -9,6 +9,6 @@ tempo:
           endpoint: "0.0.0.0:4318"
   resources:
     requests: { cpu: 100m, memory: 256Mi }
-    limits: { memory: 768Mi }
+    limits: { memory: 512Mi }
 persistence:
   enabled: false

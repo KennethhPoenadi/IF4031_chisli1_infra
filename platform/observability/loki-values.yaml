@@ -36,7 +36,7 @@ singleBinary:
       mountPath: /var/loki
   resources:
     requests: { cpu: 100m, memory: 256Mi }
-    limits: { memory: 768Mi }
+    limits: { memory: 512Mi }
 
 backend: { replicas: 0 }
 read: { replicas: 0 }
