@@ -2,6 +2,7 @@ set -euo pipefail
 
 if [ $# -eq 0 ]; then echo "usage: $0 image:tag [image:tag ...]" >&2; exit 1; fi
 
+PLATFORM_ARCH="${PLATFORM_ARCH:-amd64}"
 REGISTRY_USER="${REGISTRY_USER:-}"
 REGISTRY_PASS="${REGISTRY_PASS:-}"
 
@@ -36,11 +37,13 @@ for img in "$@"; do
   fi
   pulled=0
   for dest in "${dests[@]}"; do
-    if docker manifest inspect "$dest" >/dev/null 2>&1; then
-      echo "SKIP $dest sudah ada"
+    # Lewati hanya bila tag sudah ada DAN arsitekturnya cocok; image arm64 hasil mirror lama harus ditimpa.
+    if existing="$(docker manifest inspect -v "$dest" 2>/dev/null)" \
+       && grep -q "\"architecture\": \"${PLATFORM_ARCH}\"" <<<"$existing"; then
+      echo "SKIP $dest sudah ada ($PLATFORM_ARCH)"
       continue
     fi
-    if [ "$pulled" = 0 ]; then docker pull "$img"; pulled=1; fi
+    if [ "$pulled" = 0 ]; then docker pull --platform "linux/${PLATFORM_ARCH}" "$img"; pulled=1; fi
     docker tag "$img" "$dest"
     docker push --quiet "$dest"
     echo "OK -> $dest"
