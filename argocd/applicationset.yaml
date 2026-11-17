@@ -11,8 +11,10 @@ spec:
         generators:
           - list:
               elements:
-                - env: dev
-                  namespace: dev
+                # dev dinonaktifkan: satu node 8-11 GB tidak muat menampung dev dan prod sekaligus.
+                # Demo M2 hanya membutuhkan prod. Aktifkan lagi dengan menghapus tanda komentar di bawah.
+                # - env: dev
+                #   namespace: dev
                 - env: prod
                   namespace: sistem-informasi-kebencanaan-bnpb
           - list:
