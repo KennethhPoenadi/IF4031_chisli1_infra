@@ -11,8 +11,8 @@ ingress:
 # batas 256Mi dan replika yang tersisa kebanjiran (46-56% gagal selama 20 detik). Lebih banyak replika membagi koneksi dan
 # antrean admission, sehingga memori per pod turun.
 autoscaling:
-  minReplicas: 4
-  maxReplicas: 8
+  minReplicas: 6
+  maxReplicas: 10
 
 env:
   # Batas lunak memori Go di bawah limit pod 256Mi: GC bekerja agresif sebelum OOMKilled.
@@ -53,3 +53,19 @@ networkPolicy:
   ingressController: true
   from: []
   to: [aggregator, auth-service, rabbitmq]
+
+# Probe liveness berbasis TCP dan sabar: di bawah beban 10.000 VU probe HTTP 1 detik gagal, atau pod yang baru lahir (menunggu
+# auth-service) dimatikan kubelet sebelum sempat mendengarkan. Readiness tetap HTTP agar pod yang benar-benar sakit keluar dari endpoint.
+livenessProbe:
+  httpGet: null
+  tcpSocket: { port: http }
+  initialDelaySeconds: 40
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 6
+readinessProbe:
+  httpGet: { path: /health, port: http }
+  initialDelaySeconds: 3
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 4
