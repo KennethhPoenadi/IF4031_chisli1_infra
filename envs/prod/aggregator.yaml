@@ -25,9 +25,10 @@ env:
   STORE_UNIT_NAMES: store-0,store-1,store-2
   STORE_REPLICATION_FACTOR: "2"
   # Cluster dua node saling terhubung lewat Tailscale di atas Wi-Fi dan NAT WSL: throughput antar-pod lintas node hanya
-  # 14-22 Mbit/s dan RTT puncak > 80 ms. Pada pembacaan besar, 2-5 detik terlalu ketat: unit di node lain ditandai tidak
-  # terjangkau sesaat dan memicu perbaikan (status partial).
-  STORE_UNIT_TIMEOUT_MS: "15000"
+  # 14-22 Mbit/s dan RTT puncak > 80 ms, jadi 2 detik terlalu ketat. Batas atas juga penting: saat sebuah unit baru mati dan
+  # belum ditandai, permintaan yang mengenainya menunggu sampai timeout ini; 15 detik membuat dua penantian berurutan
+  # melewati 30 detik (permintaan menggantung), sedangkan 5 detik membatasinya di sekitar 10 detik.
+  STORE_UNIT_TIMEOUT_MS: "5000"
   RABBITMQ_EXCHANGE: hazard_events
   RABBITMQ_EXCHANGE_TYPE: topic
   BMKG_BASE_URL: http://bmkg-mock:8081
