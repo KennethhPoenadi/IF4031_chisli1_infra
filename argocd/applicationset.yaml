@@ -52,6 +52,14 @@ spec:
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{.namespace}}'
+      # Jumlah replika diubah saat runtime (load test mengganti replika Aggregator 3 -> 5 -> 2 lewat HPA). Tanpa ini selfHeal
+      # membatalkan perubahan itu dalam hitungan detik. HPA yang dibuat KEDA (ScaledObject) memakai grup yang sama.
+      ignoreDifferences:
+        - group: autoscaling
+          kind: HorizontalPodAutoscaler
+          jsonPointers:
+            - /spec/minReplicas
+            - /spec/maxReplicas
       syncPolicy:
         automated:
           prune: true
