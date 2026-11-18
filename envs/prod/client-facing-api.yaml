@@ -18,8 +18,11 @@ env:
   # Batas tunggu harus lebih besar dari antrean sah di aggregator (permintaan serentak yang diizinkan / kapasitas): 2 x 200 = 400
   # serentak pada sekitar 200 rps = 2 detik. Dengan 1,5 detik, permintaan yang akan berhasil malah menjadi 503 saat beban tinggi.
   CLIENT_API_AGGREGATOR_TIMEOUT_MS: "5000"
-  CLIENT_API_MAX_INFLIGHT: "200"
-  CLIENT_API_PRIORITY_RESERVED: "20"
+  # Permintaan serentak yang diizinkan masuk ke aggregator harus mendekati kapasitasnya (sekitar 200 rps, target latensi 0,5 detik
+  # = sekitar 100 serentak total = 50 per replika). Batas 200 per replika membuat Mongo kelebihan beban pada uji k6: satu operasi
+  # lambat menandai unit mati dan memicu kegagalan berantai (shardstore: tidak ada unit yang terjangkau). Kelebihannya ditolak 429.
+  CLIENT_API_MAX_INFLIGHT: "50"
+  CLIENT_API_PRIORITY_RESERVED: "10"
   CLIENT_API_MAX_PRIORITY_QUEUED: "400"
   CLIENT_API_REVOCATION_POLL_MS: "1000"
   FIELD_REPORT_PUBLISH_TIMEOUT_MS: "2000"
