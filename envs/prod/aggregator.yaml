@@ -56,6 +56,10 @@ env:
 secretRefs: [app-secrets]
 
 extraEnv:
+  # Batas lunak memori Go sedikit di bawah limit pod (512Mi, Lampiran B): GC bekerja lebih agresif sebelum
+  # menyentuh batas, sehingga lonjakan sesaat (perbaikan, pemindaian) tidak berujung OOMKilled.
+  - name: GOMEMLIMIT
+    value: 400MiB
   - name: MONGO_ROOT_USERNAME
     valueFrom:
       secretKeyRef:
