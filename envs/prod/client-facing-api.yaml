@@ -7,10 +7,16 @@ ingress:
   enabled: true
   host: api.prod.localtest.me
 
+# Memori per pod dikunci Lampiran B (128Mi/256Mi), tetapi jumlah replika bebas. Uji 10.000 VU membuat satu replika OOMKilled pada
+# batas 256Mi dan replika yang tersisa kebanjiran (46-56% gagal selama 20 detik). Lebih banyak replika membagi koneksi dan
+# antrean admission, sehingga memori per pod turun.
 autoscaling:
-  maxReplicas: 3
+  minReplicas: 4
+  maxReplicas: 8
 
 env:
+  # Batas lunak memori Go di bawah limit pod 256Mi: GC bekerja agresif sebelum OOMKilled.
+  GOMEMLIMIT: "200MiB"
   CLIENT_API_PORT: "8080"
   AGGREGATOR_URL: http://aggregator:8090
   AUTH_SERVICE_URL: http://auth-service:8091
