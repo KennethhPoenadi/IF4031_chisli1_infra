@@ -24,7 +24,9 @@ env:
   MONGO_HAZARD_COLLECTION: hazard_events
   STORE_UNIT_NAMES: store-0,store-1,store-2
   STORE_REPLICATION_FACTOR: "2"
-  STORE_UNIT_TIMEOUT_MS: "2000"
+  # Cluster dua node saling terhubung lewat Tailscale di atas Wi-Fi (RTT rata-rata 24 ms, puncak > 80 ms). Pada beban tulis
+  # tinggi, 2 detik terlalu ketat: unit di node lain ditandai tidak terjangkau sesaat dan memicu perbaikan (status partial).
+  STORE_UNIT_TIMEOUT_MS: "5000"
   RABBITMQ_EXCHANGE: hazard_events
   RABBITMQ_EXCHANGE_TYPE: topic
   BMKG_BASE_URL: http://bmkg-mock:8081
