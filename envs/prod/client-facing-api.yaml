@@ -15,7 +15,9 @@ env:
   AGGREGATOR_URL: http://aggregator:8090
   AUTH_SERVICE_URL: http://auth-service:8091
   AUTH_TOKEN_ISSUER: bnpb-auth
-  CLIENT_API_AGGREGATOR_TIMEOUT_MS: "1500"
+  # Batas tunggu harus lebih besar dari antrean sah di aggregator (permintaan serentak yang diizinkan / kapasitas): 2 x 200 = 400
+  # serentak pada sekitar 200 rps = 2 detik. Dengan 1,5 detik, permintaan yang akan berhasil malah menjadi 503 saat beban tinggi.
+  CLIENT_API_AGGREGATOR_TIMEOUT_MS: "5000"
   CLIENT_API_MAX_INFLIGHT: "200"
   CLIENT_API_PRIORITY_RESERVED: "20"
   CLIENT_API_MAX_PRIORITY_QUEUED: "400"

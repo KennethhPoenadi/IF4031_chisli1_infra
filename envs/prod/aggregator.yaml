@@ -89,6 +89,12 @@ extraEnv:
   - name: RABBITMQ_URL
     value: amqp://$(RABBITMQ_USER):$(RABBITMQ_PASSWORD)@rabbitmq:5672/
 
+# Batas CPU bawaan chart (500m) membuat aggregator tersibuk terkena throttling (409m terpakai) pada uji beban k6.
+# requests tetap 100m agar perilaku HPA (berbasis persen dari requests) tidak berubah.
+resources:
+  requests: { cpu: 100m }
+  limits: { cpu: 1000m }
+
 livenessProbe:
   httpGet: null
   tcpSocket: { port: http }
