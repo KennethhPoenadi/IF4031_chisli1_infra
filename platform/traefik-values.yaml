@@ -25,3 +25,22 @@ tolerations:
   - key: node-role.kubernetes.io/control-plane
     operator: Exists
     effect: NoSchedule
+
+# Ingress diuji dengan 10.000 pengguna virtual. Tanpa batas, memori Traefik tumbuh sekitar 370 KB per koneksi (1,5 GB pada 4.000
+# koneksi) karena GC Go menahan heap hingga dua kali memori hidup, dan pada 10.000 koneksi dapat melampaui memori node WSL.
+# Batas memori pod membuat GC bekerja lebih agresif sebelum memori melonjak (GOMEMLIMIT otomatis) dan menjadi jaring pengaman:
+# bila terlampaui hanya Traefik yang restart, bukan seluruh node dimatikan kernel.
+# Chart otomatis menetapkan GOMEMLIMIT sebesar 90% dari batas memori (sekitar 1260 MiB untuk batas 1400 MiB).
+resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    memory: 1400Mi
+
+# hostPort 80/443 hanya dapat dipegang satu pod per node: pod baru tidak boleh menunggu pod lama (maxSurge 0).
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 1
+    maxSurge: 0
