@@ -44,3 +44,9 @@ updateStrategy:
   rollingUpdate:
     maxUnavailable: 1
     maxSurge: 0
+
+# 502 (Bad Gateway) dari Traefik: layanan Go menutup koneksi menganggur setelah 60 detik (IdleTimeout), sedangkan Traefik menyimpan
+# koneksi backend hingga 90 detik (bawaan), sehingga ia dapat memakai ulang koneksi yang baru ditutup server. Batas idle backend
+# dibuat lebih pendek dari server agar Traefik yang selalu menutup lebih dulu.
+additionalArguments:
+  - "--serversTransport.forwardingTimeouts.idleConnTimeout=45s"
