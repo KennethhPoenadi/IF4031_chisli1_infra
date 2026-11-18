@@ -17,3 +17,12 @@ networkPolicy:
   from: [aggregator]
   fromNamespaces: [tester-agent]
   to: []
+
+# Mock mensimulasikan satu sistem eksternal dengan state di memori. Beberapa replika memiliki data dan
+# penomoran event masing-masing, sehingga polling lewat Service melihat data yang berbeda-beda dan ID
+# event berulang. Satu replika membuat upstream konsisten.
+autoscaling:
+  minReplicas: 1
+  maxReplicas: 1
+pdb:
+  enabled: false
