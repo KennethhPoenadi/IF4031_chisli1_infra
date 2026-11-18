@@ -32,9 +32,11 @@ extraVolumeMounts:
 
 args: [mongod, --wiredTigerCacheSizeGB=0.25]
 
+# Limit 500m membuat Mongo tercekik saat repair atau beban tulis tinggi: query kena timeout, unit ditandai
+# tidak terjangkau, dan perbaikan membatalkan dirinya sendiri. CPU opsional menurut spec; memori tetap Lampiran B.
 resources:
-  requests: { cpu: 100m }
-  limits: { cpu: 500m }
+  requests: { cpu: 200m }
+  limits: { cpu: 1500m }
 
 extraEnv:
   - name: MONGO_INITDB_ROOT_USERNAME
