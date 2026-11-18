@@ -74,8 +74,12 @@ extraEnv:
       secretKeyRef:
         name: app-secrets
         key: MONGO_ROOT_PASSWORD
+  # Pool koneksi: pada uji beban k6 pool BELUM penuh (48 dari 100) tetapi permintaan menunggu 2 detik lalu timeout, karena
+  # driver hanya membuka 2 koneksi baru sekaligus (maxConnecting bawaan 2) dan tiap koneksi baru perlu autentikasi (lebih
+  # lambat ke store di node lain). Timeout itu dianggap unit mati dan memicu kegagalan berantai. minPoolSize memanaskan pool
+  # sebelum beban datang; maxConnecting mempercepat pertumbuhannya.
   - name: STORE_URI_TEMPLATE
-    value: mongodb://$(MONGO_ROOT_USERNAME):$(MONGO_ROOT_PASSWORD)@%s.store:27017/?authSource=admin
+    value: mongodb://$(MONGO_ROOT_USERNAME):$(MONGO_ROOT_PASSWORD)@%s.store:27017/?authSource=admin&minPoolSize=64&maxPoolSize=128&maxConnecting=16
   - name: RABBITMQ_USER
     valueFrom:
       secretKeyRef:
