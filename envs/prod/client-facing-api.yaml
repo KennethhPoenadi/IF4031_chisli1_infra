@@ -17,6 +17,16 @@ ingress:
 # Memori per pod dikunci Lampiran B (128Mi/256Mi), tetapi jumlah replika bebas. Uji 10.000 VU membuat satu replika OOMKilled pada
 # batas 256Mi dan replika yang tersisa kebanjiran (46-56% gagal selama 20 detik). Lebih banyak replika membagi koneksi dan
 # antrean admission, sehingga memori per pod turun.
+# Ingress (Traefik) hanya ada di node berlabel ingress-ready=true dan Service mengutamakan pod di node yang sama (PreferSameNode).
+# Pod API karenanya diutamakan di node itu juga; sebaran merata ke worker membuat pod lokal sedikit (3 dari 6 di awal uji) sehingga
+# kewalahan dan Traefik menjawab 502, sementara pod di worker hampir tidak menerima lalu lintas. Masih boleh di worker bila penuh.
+preferNode:
+  enabled: true
+  key: ingress-ready
+  value: "true"
+topologySpread:
+  enabled: false
+
 autoscaling:
   minReplicas: 6
   maxReplicas: 10

@@ -31,6 +31,12 @@ topologySpread:
   topologyKey: kubernetes.io/hostname
   whenUnsatisfiable: ScheduleAnyway
 
+# Utamakan node dengan label tertentu (preferensi, bukan syarat): pod tetap boleh di node lain bila node itu penuh.
+preferNode:
+  enabled: false
+  key: ""
+  value: ""
+
 antiAffinity:
   enabled: false
   mode: required

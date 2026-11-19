@@ -65,8 +65,19 @@ spec:
   automountServiceAccountToken: {{ .Values.automountServiceAccountToken }}
   {{- end }}
   terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
-  {{- if .Values.antiAffinity.enabled }}
+  {{- if or .Values.antiAffinity.enabled .Values.preferNode.enabled }}
   affinity:
+    {{- if .Values.preferNode.enabled }}
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: {{ .Values.preferNode.key }}
+                operator: In
+                values: [{{ .Values.preferNode.value | quote }}]
+    {{- end }}
+    {{- if .Values.antiAffinity.enabled }}
     podAntiAffinity:
       {{- if eq .Values.antiAffinity.mode "required" }}
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -83,6 +94,7 @@ spec:
               matchLabels:
                 {{- include "microservice.selectorLabels" . | nindent 16 }}
       {{- end }}
+    {{- end }}
   {{- end }}
   {{- if .Values.topologySpread.enabled }}
   topologySpreadConstraints:
