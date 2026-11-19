@@ -30,8 +30,10 @@ gh workflow run ci.yml --ref main
 ```
 
 Workflow memvalidasi cluster, memasang platform (Traefik, metrics-server, Kyverno, KEDA, Argo CD), menerapkan policy, membuat
-Secret, dan menerapkan `ApplicationSet`. Argo CD kemudian men-deploy semua service ke namespace
-`sistem-informasi-kebencanaan-bnpb`. Urutan yang sama dapat dijalankan manual dari runner:
+Secret, dan menerapkan `ApplicationSet`; Argo CD kemudian men-deploy semua service ke namespace
+`sistem-informasi-kebencanaan-bnpb`. Dua job terakhir memasang Tester Agent dan observabilitas; keduanya `continue-on-error`
+sehingga kegagalannya terlihat di workflow tetapi tidak menggagalkan deploy aplikasi. Urutan yang sama dapat dijalankan manual
+dari runner:
 
 ```
 CLUSTER_PROVIDER=k3s ./scripts/cluster-up.sh           # validasi cluster
@@ -41,11 +43,9 @@ ENV_FILE="$HOME/.xops/prod.env" ./scripts/create-secrets.sh prod
 ./scripts/bootstrap-argocd.sh                           # ApplicationSet; Argo CD mulai sinkronisasi
 ```
 
-Dua langkah tambahan dijalankan sekali, di luar workflow:
-
 ```
 ./scripts/install-tester-agent.sh                       # Tester Agent dari manifest yang di-pin (menolak digest lain)
-KUBECONFIG=~/.kube/k3s-config ./scripts/observability.sh  # Prometheus, Loki, Tempo, Alloy, Grafana
+./scripts/observability.sh                              # Prometheus, Loki, Tempo, Alloy, Grafana
 ```
 
 Memeriksa hasil:
@@ -124,15 +124,17 @@ Didefinisikan di `.github/workflows/ci.yml` (validate dan platform) dan `.github
 | `policies` | `policies` | Menerapkan policy, menunggu Ready, lalu menguji penolakan manifest pelanggaran di cluster |
 | `secrets` | `secrets` (matriks `dev`, `prod`) | Secret `registry-credentials` (pull image) dan `app-secrets` per namespace |
 | `bootstrap` | `bootstrap-argocd` | Menerapkan `ApplicationSet` |
+| `tester-agent` | `tester-agent` | Memasang Tester Agent dari manifest yang di-pin. `continue-on-error` |
+| `observability` | `observability` | Prometheus, Loki, Tempo, Alloy, dan Grafana di namespace `observability`. `continue-on-error`, tidak memblokir deploy |
 | `release` | `release-prod` | Menulis tag prod langsung, dipicu oleh workflow aplikasi atau manual |
 
-Push ke `main` menjalankan `validate` sampai `bootstrap`; pull request hanya menjalankan `validate` (di runner GitHub). Workflow `Release` dipicu aplikasi atau manual. Job yang menyentuh cluster berjalan di self-hosted runner berlabel `k8s-local`. Untuk development, pastikan `docker`, `kubectl`, `helm`, `terraform`, dan `kind` ada di `PATH`. Untuk demo K3s, runner memerlukan `kubectl`, `helm`, akses jaringan ke API Node A, dan kubeconfig yang valid.
+Push ke `main` menjalankan `validate` sampai `observability`; pull request hanya menjalankan `validate` (di runner GitHub). Workflow `Release` dipicu aplikasi atau manual. Job yang menyentuh cluster berjalan di self-hosted runner berlabel `k8s-local`. Untuk development, pastikan `docker`, `kubectl`, `helm`, `terraform`, dan `kind` ada di `PATH`. Untuk demo K3s, runner memerlukan `kubectl`, `helm`, akses jaringan ke API Node A, dan kubeconfig yang valid.
 
 ## Observabilitas
 
 Stack Grafana: **Prometheus** (metrik), **Tempo** (trace), **Loki** (log), **Alloy** (pengumpul, satu pod per node), dan
-**Grafana** (tampilan). Semuanya di namespace `observability`, dipasang **manual** oleh `scripts/observability.sh` (tidak termasuk
-workflow CI) dengan versi chart yang di-pin di `platform/versions.env`. Skrip aman dijalankan ulang (`helm upgrade --install`).
+**Grafana** (tampilan). Semuanya di namespace `observability`, dipasang oleh job `observability` di workflow CI (atau manual dengan
+`scripts/observability.sh`) dengan versi chart yang di-pin di `platform/versions.env`. Skrip aman dijalankan ulang (`helm upgrade --install`).
 Aplikasi memakai modul bersama `services/telemetry` (OpenTelemetry).
 
 Penempatan: Prometheus dan Grafana di node ingress (`ingress-ready=true`, yaitu `chisli-control`) agar dashboard tetap hidup saat

@@ -122,3 +122,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: ./scripts/bootstrap-argocd.sh
+
+  # Langkah sesudah aplikasi ter-deploy. Tidak memblokir deploy: kegagalannya terlihat di workflow tetapi tidak menggagalkan rilis.
+  tester-agent:
+    needs: [bootstrap-argocd]
+    runs-on: [self-hosted, k8s-local]
+    continue-on-error: true
+    concurrency:
+      group: xops-cluster
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/load-env
+      - run: ./scripts/install-tester-agent.sh
+
+  observability:
+    if: ${{ !cancelled() && needs.bootstrap-argocd.result == 'success' }}
+    needs: [bootstrap-argocd, tester-agent]
+    runs-on: [self-hosted, k8s-local]
+    continue-on-error: true
+    concurrency:
+      group: xops-cluster
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/load-env
+      - run: ./scripts/observability.sh
