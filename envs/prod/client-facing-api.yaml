@@ -2,6 +2,13 @@ role: api
 
 service:
   port: 8080
+  # Traefik (satu-satunya ingress, hostPort di chisli-control) menyerahkan pembagian beban ke Service (nativelb), dan Service
+  # mengutamakan pod di node yang sama. Tanpa ini setengah lalu lintas ingress menyeberang Tailscale ke pod di Mac; di bawah banjir
+  # Media jalur itu jenuh dan permintaan Tim Lapangan tertahan sampai timeout (uji P5: pod di control p99 108 ms, pod di Mac p99
+  # 2,6 dtk, dan 378 dari 1.980 permintaan tidak pernah sampai ke pod). Bila tidak ada pod lokal, lalu lintas tetap ke node lain.
+  annotations:
+    traefik.ingress.kubernetes.io/service.nativelb: "true"
+  trafficDistribution: PreferSameNode
 
 ingress:
   enabled: true

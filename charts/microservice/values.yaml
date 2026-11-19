@@ -59,6 +59,9 @@ service:
   headless: false
   # Port tambahan, misalnya management API RabbitMQ untuk scaler KEDA: [{name, port}]
   extraPorts: []
+  annotations: {}
+  # Mis. PreferSameNode: kube-proxy mengutamakan endpoint di node yang sama dengan pengirim.
+  trafficDistribution: ""
 
 env: {}
 secretRefs: []
