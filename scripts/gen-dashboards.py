@@ -140,7 +140,7 @@ def pipeline():
              desc="SLO jalur peringatan: persentase pesan diproses dalam 5 detik (aturan rekaman, jendela 5 menit).",
              steps=[{"color": "red", "value": None}, {"color": "orange", "value": 0.95}, {"color": "green", "value": 0.99}]),
         stat("Event masuk (per menit)", "sum(rate(hazard_events_ingested_total[5m])) * 60", 12, 1, w=6, unit="short", decimals=1),
-        stat("Event gagal (per menit)", "sum(rate(hazard_events_failed_total[5m])) * 60", 18, 1, w=6, unit="short", decimals=1,
+        stat("Event gagal (per menit)", "(sum(rate(hazard_events_failed_total[5m])) * 60) or vector(0)", 18, 1, w=6, unit="short", decimals=1,
              steps=[{"color": "green", "value": None}, {"color": "red", "value": 0.01}]),
         timeseries("Latensi notifikasi p50 / p95 / p99", [
             ("histogram_quantile(0.50, sum by (le) (rate(notification_latency_seconds_bucket[2m])))", "p50"),
