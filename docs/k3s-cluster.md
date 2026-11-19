@@ -4,8 +4,8 @@ Cluster demo terdiri dari dua node Linux dengan kernel terpisah, masing-masing d
 
 | Node | Peran | Penempatan aktual |
 | --- | --- | --- |
-| `chisli-control` | control-plane sekaligus worker, ingress (`ingress-ready=true`) | VM WSL2 Ubuntu 26.04 di laptop Windows (i7-12650H), 8 vCPU / 9,7 GiB, amd64, Tailscale 100.66.57.46 |
-| `chisli-worker-1` | worker non-control-plane | VM Colima Ubuntu 24.04 di MacBook, 3 vCPU / 4,8 GiB, arm64, Tailscale 100.109.151.22 |
+| `chisli-control` | control-plane sekaligus worker, ingress (`ingress-ready=true`) | VM WSL2 Ubuntu 26.04 di laptop Windows (Intel Core i7-12650H, RAM 16 GB); node 8 vCPU / 10 GB, amd64, Tailscale 100.66.57.46 |
+| `chisli-worker-1` | worker non-control-plane | VM Colima Ubuntu 24.04 di MacBook Air M1 2020 (RAM 8 GB, SSD 512 GB); node 3 vCPU / 4,8 GiB, arm64, Tailscale 100.109.151.22 |
 
 Dua VM pada satu host fisik juga memenuhi syarat kernel terpisah; dua host berbeda seperti di atas memenuhi bonus host fisik berbeda.
 

@@ -10,10 +10,10 @@ Kode aplikasi, pengujian P1-P5, bukti, dan dokumentasi arsitektur ada di reposit
 
 ## Deklarasi topologi
 
-| Node | Jenis | Host fisik | CPU / RAM node | Arsitektur |
-| --- | --- | --- | --- | --- |
-| `chisli-control` (control plane + worker, ingress) | VM WSL2 (Ubuntu 26.04) | Laptop Windows, Intel Core i7-12650H | 8 vCPU / 9,7 GiB | amd64 |
-| `chisli-worker-1` (worker) | VM Colima (Ubuntu 24.04) | MacBook | 3 vCPU / 4,8 GiB | arm64 |
+| Node | Jenis | Host fisik | Spesifikasi host | Sumber daya node | Arsitektur |
+| --- | --- | --- | --- | --- | --- |
+| `chisli-control` (control plane + worker, ingress) | VM WSL2 (Ubuntu 26.04) | Laptop Windows | Intel Core i7-12650H, RAM 16 GB | 8 vCPU / 10 GB (batas WSL2) | amd64 |
+| `chisli-worker-1` (worker) | VM Colima (Ubuntu 24.04) | MacBook Air M1 (2020) | Apple M1, RAM 8 GB, SSD 512 GB | 3 vCPU / 4,8 GiB (VM Colima) | arm64 |
 
 Node terhubung lewat Tailscale. Skenario yang mematikan node hanya dikenakan pada `chisli-worker-1`. Penempatan pod dan
 keterbatasan topologi: `docs/topologi-arsitektur.md` di repositori aplikasi.
