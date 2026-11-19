@@ -73,3 +73,7 @@ datasources:
             query: '{pod="$${__span.tags["k8s.pod.name"]}"} |= "$${__trace.traceId}"'
           nodeGraph:
             enabled: true
+
+# Penempatan: dashboard metrik harus tetap hidup saat node worker dimatikan (skenario hanya mengenai worker).
+nodeSelector:
+  ingress-ready: "true"

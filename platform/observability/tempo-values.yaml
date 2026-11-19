@@ -12,3 +12,7 @@ tempo:
     limits: { memory: 512Mi }
 persistence:
   enabled: false
+
+# Penempatan: di worker untuk membagi memori; node control sudah terpakai sekitar 80%.
+nodeSelector:
+  kubernetes.io/hostname: chisli-worker-1

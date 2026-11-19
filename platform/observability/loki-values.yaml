@@ -25,6 +25,9 @@ loki:
     enabled: false
 
 singleBinary:
+  # Di worker untuk membagi memori; node control sudah terpakai sekitar 80%.
+  nodeSelector:
+    kubernetes.io/hostname: chisli-worker-1
   replicas: 1
   persistence:
     enabled: false

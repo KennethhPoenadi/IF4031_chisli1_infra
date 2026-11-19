@@ -4,6 +4,8 @@ prometheus-pushgateway:
   enabled: false
 
 kube-state-metrics:
+  nodeSelector:
+    ingress-ready: "true"
   enabled: true
   metricLabelsAllowlist:
     - "pods=[role,app.kubernetes.io/name]"
@@ -23,6 +25,9 @@ configmapReload:
       tag: v0.94.0
 
 server:
+  # Di node control: dashboard metrik harus tetap hidup saat node worker dimatikan.
+  nodeSelector:
+    ingress-ready: "true"
   retention: 24h
   persistentVolume:
     enabled: false
