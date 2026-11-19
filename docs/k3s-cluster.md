@@ -1,21 +1,28 @@
 # Cluster K3s
 
-Cluster demo terdiri dari minimal dua node Linux dengan kernel terpisah. Target awalnya adalah:
+Cluster demo terdiri dari dua node Linux dengan kernel terpisah, masing-masing di host fisik berbeda:
 
-| Node | Peran | Penempatan |
+| Node | Peran | Penempatan aktual |
 | --- | --- | --- |
-| `chisli-control` | control-plane sekaligus worker | Ubuntu VM atau Linux native pada host A |
-| `chisli-worker-1` | worker non-control-plane | Ubuntu VM atau Linux native pada host A/B |
+| `chisli-control` | control-plane sekaligus worker, ingress (`ingress-ready=true`) | VM WSL2 Ubuntu 26.04 di laptop Windows (i7-12650H), 8 vCPU / 9,7 GiB, amd64, Tailscale 100.66.57.46 |
+| `chisli-worker-1` | worker non-control-plane | VM Colima Ubuntu 24.04 di MacBook, 3 vCPU / 4,8 GiB, arm64, Tailscale 100.109.151.22 |
 
-Dua VM pada satu host fisik memenuhi kebutuhan kernel terpisah. Bonus host fisik berbeda baru terpenuhi bila kedua node berjalan pada host A dan B yang berbeda. Isi jenis VM, host fisik, CPU, RAM, dan IP aktual di README sebelum demo.
+Dua VM pada satu host fisik juga memenuhi syarat kernel terpisah; dua host berbeda seperti di atas memenuhi bonus host fisik berbeda.
 
 ## Prasyarat jaringan
 
-- Kedua node memiliki hostname dan IP LAN yang unik serta stabil.
+Kedua node harus saling menjangkau pada alamat yang stabil. Cluster demo memakai **Tailscale** (WireGuard), karena node berada di
+jaringan berbeda dan WSL2 berjalan dalam mode NAT: alamat Tailscale dipakai sebagai `K3S_NODE_IP` dan alamat API server.
+Bila kedua node berada di satu LAN, IP LAN statis juga dapat dipakai.
+
+- Kedua node memiliki hostname dan alamat (Tailscale atau LAN) yang unik serta stabil.
 - Runner dapat mengakses Node A pada TCP `6443`.
-- Antar-node mengizinkan TCP `6443`, UDP `8472`, dan TCP `10250`.
+- Antar-node mengizinkan TCP `6443`, UDP `8472` (flannel VXLAN), dan TCP `10250`.
 - UDP `8472` tidak dibuka ke internet.
-- Gunakan bridged networking atau external virtual switch bila node berupa VM.
+- Bila node berupa VM pada LAN, gunakan bridged networking atau external virtual switch.
+
+Catatan WSL2: hostPort Traefik (80/443) tidak diteruskan ke Windows dalam mode NAT. Untuk membuka dashboard dari peramban Windows,
+jalankan `kubectl -n traefik port-forward svc/traefik 8088:80` dan pakai port `:8088`.
 
 ## 1. Memasang Node A
 
@@ -28,7 +35,7 @@ sudo env \
   ./scripts/up.sh
 ```
 
-Ganti IP dengan IP LAN aktual Node A. Script memasang K3s server, menonaktifkan komponen bawaan yang akan dipasang ulang oleh platform, dan memberi label `ingress-ready=true`.
+Ganti IP dengan alamat aktual Node A (Tailscale atau LAN). Script memasang K3s server, menonaktifkan komponen bawaan yang akan dipasang ulang oleh platform, dan memberi label `ingress-ready=true`.
 
 Periksa hasil dan baca token join tanpa menyalinnya ke log:
 

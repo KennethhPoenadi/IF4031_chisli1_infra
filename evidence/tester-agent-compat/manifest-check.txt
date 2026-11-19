@@ -1,0 +1,10 @@
+namespace/tester-agent configured (server dry run)
+serviceaccount/tester-agent unchanged (server dry run)
+role.rbac.authorization.k8s.io/tester-agent-coordination unchanged (server dry run)
+rolebinding.rbac.authorization.k8s.io/tester-agent-coordination unchanged (server dry run)
+role.rbac.authorization.k8s.io/tester-agent-app unchanged (server dry run)
+rolebinding.rbac.authorization.k8s.io/tester-agent-app unchanged (server dry run)
+clusterrole.rbac.authorization.k8s.io/tester-agent-nodes unchanged (server dry run)
+clusterrolebinding.rbac.authorization.k8s.io/tester-agent-nodes unchanged (server dry run)
+daemonset.apps/tester-agent unchanged (server dry run)
+Manifest Tester Agent valid dan dapat diterapkan (dry-run server).

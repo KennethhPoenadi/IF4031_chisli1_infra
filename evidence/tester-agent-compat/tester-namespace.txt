@@ -1,0 +1,6 @@
+networkpolicy: 0
+resourcequota: 0
+limitrange: 0
+networkpolicy: 0
+resourcequota: 0
+limitrange: 0

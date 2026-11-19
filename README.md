@@ -1,8 +1,61 @@
 # infra
 
-Konfigurasi infrastruktur dan deployment untuk platform agregasi informasi kebencanaan (tujuh service Go, MongoDB, RabbitMQ). Repositori ini mendukung cluster `kind` untuk development dan cluster K3s multi-node untuk demo, beserta platform pendukung, chart Helm, konfigurasi dev dan prod, definisi Argo CD, policy Kyverno, dan workflow GitHub Actions.
+Konfigurasi infrastruktur dan deployment untuk Sistem Informasi Kebencanaan BNPB (IF4031 Milestone 2): service Go, tiga unit
+MongoDB, RabbitMQ, mock, Sensor Pantai, dan observabilitas. Repositori ini mendukung cluster `kind` untuk development dan cluster
+K3s dua node untuk demo, beserta platform pendukung, chart Helm, konfigurasi dev dan prod, definisi Argo CD, policy Kyverno, dan
+workflow GitHub Actions.
 
-Kode aplikasi dan pipeline build image ada di repositori aplikasi. Dokumentasi lengkap (arsitektur, bukti, keterbatasan) ada di repositori `docs`.
+Kode aplikasi, pengujian P1-P5, bukti, dan dokumentasi arsitektur ada di repositori aplikasi (`IF4031_chisli1`): README-nya,
+`docs/topologi-arsitektur.md`, dan `docs/bukti/`. Panduan membuat cluster ada di [docs/k3s-cluster.md](docs/k3s-cluster.md).
+
+## Deklarasi topologi
+
+| Node | Jenis | Host fisik | CPU / RAM node | Arsitektur |
+| --- | --- | --- | --- | --- |
+| `chisli-control` (control plane + worker, ingress) | VM WSL2 (Ubuntu 26.04) | Laptop Windows, Intel Core i7-12650H | 8 vCPU / 9,7 GiB | amd64 |
+| `chisli-worker-1` (worker) | VM Colima (Ubuntu 24.04) | MacBook | 3 vCPU / 4,8 GiB | arm64 |
+
+Node terhubung lewat Tailscale. Skenario yang mematikan node hanya dikenakan pada `chisli-worker-1`. Penempatan pod dan
+keterbatasan topologi: `docs/topologi-arsitektur.md` di repositori aplikasi.
+
+## Deploy
+
+Prasyarat: cluster K3s dua node `Ready` ([docs/k3s-cluster.md](docs/k3s-cluster.md)), self-hosted runner berlabel `k8s-local`
+dengan kubeconfig cluster, dan file Secret `~/.xops/prod.env` di runner (lihat [Secret, variable, dan environment](#secret-variable-dan-environment)).
+
+**Satu perintah:** jalankan workflow CI di branch `main` (push ke `main` juga memicunya):
+
+```
+gh workflow run ci.yml --ref main
+```
+
+Workflow memvalidasi cluster, memasang platform (Traefik, metrics-server, Kyverno, KEDA, Argo CD), menerapkan policy, membuat
+Secret, dan menerapkan `ApplicationSet`. Argo CD kemudian men-deploy semua service ke namespace
+`sistem-informasi-kebencanaan-bnpb`. Urutan yang sama dapat dijalankan manual dari runner:
+
+```
+CLUSTER_PROVIDER=k3s ./scripts/cluster-up.sh           # validasi cluster
+./scripts/platform.sh                                   # Traefik, metrics-server, Kyverno, KEDA, Argo CD, namespace
+# policy: lihat job `policies` di .github/workflows/ci.yml
+ENV_FILE="$HOME/.xops/prod.env" ./scripts/create-secrets.sh prod
+./scripts/bootstrap-argocd.sh                           # ApplicationSet; Argo CD mulai sinkronisasi
+```
+
+Dua langkah tambahan dijalankan sekali, di luar workflow:
+
+```
+./scripts/install-tester-agent.sh                       # Tester Agent dari manifest yang di-pin (menolak digest lain)
+KUBECONFIG=~/.kube/k3s-config ./scripts/observability.sh  # Prometheus, Loki, Tempo, Alloy, Grafana
+```
+
+Memeriksa hasil:
+
+```
+kubectl get nodes -o wide
+kubectl get applications -n argocd
+kubectl get pods,hpa,ingress -n sistem-informasi-kebencanaan-bnpb
+kubectl get pods -n observability
+```
 
 ## Struktur
 
@@ -21,6 +74,7 @@ Kode aplikasi dan pipeline build image ada di repositori aplikasi. Dokumentasi l
 | `scripts/` | Script yang dipanggil pipeline, dan dapat dijalankan lokal |
 | `tests/k6/` | Skrip uji beban untuk HPA |
 | `hpa-evidence/` | Data mentah uji autoscaling |
+| `evidence/tester-agent-compat/` | Bukti kompatibilitas Tester Agent (dry-run manifest, skenario, pod per node) dari `scripts/tester-agent-compat.sh` |
 
 ## Desain singkat
 
@@ -67,7 +121,6 @@ Didefinisikan di `.github/workflows/ci.yml` (validate dan platform) dan `.github
 | `mirror` | `mirror-images` | Menyalin MongoDB dan RabbitMQ ke repositori image kelompok di `ghcr.io` |
 | `cluster` | `cluster` | Membuat cluster `kind` untuk development atau memvalidasi cluster K3s demo |
 | `platform` | `platform` | Traefik, metrics-server, Kyverno, Argo CD, dan namespace `dev` dan `prod` |
-| `observability` | `observability` | Grafana, Prometheus, Loki, Tempo, dan Alloy di namespace `observability`. Tidak memblokir deploy aplikasi (`continue-on-error`) |
 | `policies` | `policies` | Menerapkan policy, menunggu Ready, lalu menguji penolakan manifest pelanggaran di cluster |
 | `secrets` | `secrets` (matriks `dev`, `prod`) | Secret `registry-credentials` (pull image) dan `app-secrets` per namespace |
 | `bootstrap` | `bootstrap-argocd` | Menerapkan `ApplicationSet` |
@@ -78,8 +131,14 @@ Push ke `main` menjalankan `validate` sampai `bootstrap`; pull request hanya men
 ## Observabilitas
 
 Stack Grafana: **Prometheus** (metrik), **Tempo** (trace), **Loki** (log), **Alloy** (pengumpul, satu pod per node), dan
-**Grafana** (tampilan). Semuanya di namespace `observability`, dipasang oleh `scripts/observability.sh` dengan versi chart
-yang di-pin di `platform/versions.env`. Aplikasi memakai modul bersama `services/telemetry` (OpenTelemetry).
+**Grafana** (tampilan). Semuanya di namespace `observability`, dipasang **manual** oleh `scripts/observability.sh` (tidak termasuk
+workflow CI) dengan versi chart yang di-pin di `platform/versions.env`. Skrip aman dijalankan ulang (`helm upgrade --install`).
+Aplikasi memakai modul bersama `services/telemetry` (OpenTelemetry).
+
+Penempatan: Prometheus dan Grafana di node ingress (`ingress-ready=true`, yaitu `chisli-control`) agar dashboard tetap hidup saat
+node worker dimatikan; Loki dan Tempo di `chisli-worker-1` untuk membagi memori. Penyesuaian untuk node WSL2: node-exporter tanpa
+mount root host (`/` di WSL2 bukan mount shared), dan Alloy diberi limit 1 CPU / 512Mi karena node control menjalankan pod paling
+banyak.
 
 | Kebutuhan | Di mana melihatnya |
 | --- | --- |
@@ -89,7 +148,9 @@ yang di-pin di `platform/versions.env`. Aplikasi memakai modul bersama `services
 | Jejak satu permintaan lintas service dengan durasi tiap langkah | Grafana → Explore → **Tempo** |
 | Log terstruktur ber-correlation ID | Grafana → Explore → **Loki** |
 
-Membuka Grafana: `http://grafana.localtest.me`, pengguna `admin`. Kata sandi dibuat acak saat pemasangan pertama dan disimpan di
+Membuka Grafana: `http://grafana.localtest.me`, pengguna `admin`. Dari peramban Windows (node control berupa WSL2), hostPort
+Traefik tidak diteruskan ke Windows: jalankan `kubectl -n traefik port-forward svc/traefik 8088:80` lalu buka
+`http://grafana.localtest.me:8088`. Kata sandi dibuat acak saat pemasangan pertama dan disimpan di
 Secret `grafana-admin` (bukan di Git):
 
 ```
@@ -108,7 +169,8 @@ autentikasi dan NetworkPolicy milik API) dan mengirim trace OTLP ke Alloy. Chart
 `charts/microservice/values.yaml`. Saat load test besar, turunkan sampling trace agar kolektor tidak kewalahan:
 `telemetry.traceSampleRatio: "0.1"`.
 
-Aturan Prometheus (`prometheus-values.yaml`) mencakup SLO jalur peringatan (`slo:alert_path_within_5s:ratio_rate5m`) dan peringatan
+Aturan Prometheus (`prometheus-values.yaml`) mencakup SLO jalur peringatan (`slo:alert_path_within_5s:ratio_rate5m`; label bucket
+dicocokkan dengan `le=~"5(\.0)?"` karena Prometheus 3 menormalisasinya menjadi `5.0`) dan peringatan
 untuk p95 latensi > 5 detik, unit penyimpanan mati, error rate > 1%, dan target metrik tidak merespons.
 
 Mengubah dashboard: ubah `scripts/gen-dashboards.py`, jalankan `python3 scripts/gen-dashboards.py`, lalu commit JSON hasilnya.
