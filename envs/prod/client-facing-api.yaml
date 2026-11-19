@@ -35,6 +35,11 @@ env:
   # Panggilan kelas prioritas ke aggregator yang belum kembali dalam 700 ms disusul panggilan kedua ke replika lain. Permintaan identik
   # digabung, jadi satu panggilan lambat menggagalkan puluhan penunggu sekaligus; hedging memotong ekor itu.
   CLIENT_API_PRIORITY_HEDGE_MS: "700"
+  # Batas tunggu Tim Lapangan: bila aggregator belum menjawab dalam 2 dtk (atau gagal), dijawab hasil sukses terakhir untuk kueri
+  # yang sama selama umurnya <= 30 dtk, ditandai stale (header Warning dan X-Data-Stale-Seconds, blok "stale" di body).
+  # Kelas reguler (Media) tidak memakai ini.
+  CLIENT_API_PRIORITY_STALE_AFTER_MS: "2000"
+  CLIENT_API_PRIORITY_MAX_STALE_MS: "30000"
   CLIENT_API_PRIORITY_RESERVED: "10"
   CLIENT_API_MAX_PRIORITY_QUEUED: "400"
   CLIENT_API_REVOCATION_POLL_MS: "1000"
