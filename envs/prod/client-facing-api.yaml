@@ -27,7 +27,11 @@ env:
   # Permintaan serentak yang diizinkan masuk ke aggregator harus mendekati kapasitasnya (sekitar 200 rps, target latensi 0,5 detik
   # = sekitar 100 serentak total = 50 per replika). Batas 200 per replika membuat Mongo kelebihan beban pada uji k6: satu operasi
   # lambat menandai unit mati dan memicu kegagalan berantai (shardstore: tidak ada unit yang terjangkau). Kelebihannya ditolak 429.
-  CLIENT_API_MAX_INFLIGHT: "50"
+  # Batas ini berlaku PER POD, sedangkan HPA menjalankan 6 sampai 10 pod, jadi total serentak ke aggregator = batas reguler x replika.
+  # Dengan 40 slot reguler (50 - 10) total mencapai 240 sampai 400, jauh di atas kapasitas aggregator (CPU 229% pada uji P5 dengan
+  # 1000 VU Media), sehingga permintaan Tim Lapangan yang ikut memanggil aggregator yang sama menunggu sampai timeout. Dengan 15 slot
+  # reguler (25 - 10) totalnya 90 (6 pod) sampai 150 (10 pod). Slot cadangan Tim Lapangan tetap 10 per pod.
+  CLIENT_API_MAX_INFLIGHT: "25"
   CLIENT_API_PRIORITY_RESERVED: "10"
   CLIENT_API_MAX_PRIORITY_QUEUED: "400"
   CLIENT_API_REVOCATION_POLL_MS: "1000"
