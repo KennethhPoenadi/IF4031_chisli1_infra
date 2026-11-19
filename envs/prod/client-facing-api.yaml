@@ -32,6 +32,9 @@ env:
   # 1000 VU Media), sehingga permintaan Tim Lapangan yang ikut memanggil aggregator yang sama menunggu sampai timeout. Dengan 15 slot
   # reguler (25 - 10) totalnya 90 (6 pod) sampai 150 (10 pod). Slot cadangan Tim Lapangan tetap 10 per pod.
   CLIENT_API_MAX_INFLIGHT: "25"
+  # Panggilan kelas prioritas ke aggregator yang belum kembali dalam 700 ms disusul panggilan kedua ke replika lain. Permintaan identik
+  # digabung, jadi satu panggilan lambat menggagalkan puluhan penunggu sekaligus; hedging memotong ekor itu.
+  CLIENT_API_PRIORITY_HEDGE_MS: "700"
   CLIENT_API_PRIORITY_RESERVED: "10"
   CLIENT_API_MAX_PRIORITY_QUEUED: "400"
   CLIENT_API_REVOCATION_POLL_MS: "1000"
