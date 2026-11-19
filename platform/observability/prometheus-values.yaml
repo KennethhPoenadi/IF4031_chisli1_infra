@@ -50,7 +50,7 @@ serverFiles:
         rules:
           - record: slo:alert_path_within_5s:ratio_rate5m
             expr: |
-              sum(rate(notification_latency_seconds_bucket{le="5"}[5m]))
+              sum(rate(notification_latency_seconds_bucket{le=~"5(\\.0)?"}[5m]))
                 /
               sum(rate(notification_latency_seconds_count[5m]))
           - alert: AlertPathSlowerThan5s

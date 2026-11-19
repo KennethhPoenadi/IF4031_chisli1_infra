@@ -271,7 +271,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(rate(hazard_events_failed_total[5m])) * 60",
+          "expr": "(sum(rate(hazard_events_failed_total[5m])) * 60) or vector(0)",
           "legendFormat": "{{unit}}",
           "refId": "A",
           "instant": true
