@@ -12,7 +12,9 @@ alloy:
     - { name: otlp-http, port: 4318, targetPort: 4318, protocol: TCP }
   resources:
     requests: { cpu: 50m, memory: 96Mi }
-    limits: { cpu: 500m, memory: 256Mi }
+    # Node control menjalankan pod paling banyak; dengan 500m/256Mi Alloy di sana terbentur limit saat membaca log dan probe
+    # readiness-nya timeout.
+    limits: { cpu: "1", memory: 512Mi }
   configMap:
     create: true
     content: |

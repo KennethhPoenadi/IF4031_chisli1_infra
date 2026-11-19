@@ -14,6 +14,10 @@ kube-state-metrics:
     limits: { memory: 128Mi }
 
 prometheus-node-exporter:
+  # WSL2: "/" bukan mount shared/slave, jadi mount root host ditolak (CreateContainerError). Metrik CPU, memori, dan jaringan
+  # node tetap tersedia tanpa mount ini.
+  hostRootFsMount:
+    enabled: false
   enabled: true
   resources:
     requests: { cpu: 20m, memory: 24Mi }
