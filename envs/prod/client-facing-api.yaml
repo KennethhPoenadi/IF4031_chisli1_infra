@@ -32,9 +32,6 @@ env:
   # 1000 VU Media), sehingga permintaan Tim Lapangan yang ikut memanggil aggregator yang sama menunggu sampai timeout. Dengan 15 slot
   # reguler (25 - 10) totalnya 90 (6 pod) sampai 150 (10 pod). Slot cadangan Tim Lapangan tetap 10 per pod.
   CLIENT_API_MAX_INFLIGHT: "25"
-  # Cache 1 detik hanya untuk kelas reguler (Media): kueri identik dari ribuan klien tidak lagi membebani aggregator yang juga melayani
-  # Tim Lapangan. Kelas prioritas tidak pernah memakai cache. Data Media paling lama tertinggal 1 detik.
-  CLIENT_API_REGULAR_CACHE_TTL_MS: "1000"
   CLIENT_API_PRIORITY_RESERVED: "10"
   CLIENT_API_MAX_PRIORITY_QUEUED: "400"
   CLIENT_API_REVOCATION_POLL_MS: "1000"
