@@ -18,6 +18,8 @@ podSecurityContext:
   runAsUser: 999
   runAsGroup: 999
   fsGroup: 999
+  # Tanpa ini kubelet menambah izin grup ke semua file tiap pod dibuat, dan RabbitMQ menolak .erlang.cookie yang bukan 400.
+  fsGroupChangePolicy: OnRootMismatch
 
 persistence:
   enabled: true
