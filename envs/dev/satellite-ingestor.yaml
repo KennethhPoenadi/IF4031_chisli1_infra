@@ -1,4 +1,4 @@
-role: consumer
+role: broker  # pemroses stream SSE: kelas "Broker atau pemroses stream" Lampiran B (512Mi/1Gi)
 
 strategy:
   type: Recreate
