@@ -3,6 +3,15 @@ role: broker  # pemroses stream SSE: kelas "Broker atau pemroses stream" Lampira
 strategy:
   type: Recreate
 
+# Satu-satunya pembaca feed (Recreate: tidak boleh ada dua instance). Bila pod berada di worker lalu worker mati, Kubernetes
+# menunggu pod lama selesai sebelum membuat pengganti, dan itu tidak pernah terjadi selama node mati, sehingga pemroses berhenti.
+# Spesifikasi hanya mematikan node worker, jadi pemroses diwajibkan berjalan di node control.
+preferNode:
+  enabled: true
+  mode: required
+  key: ingress-ready
+  value: "true"
+
 service:
   port: 8095
 

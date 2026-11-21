@@ -69,6 +69,14 @@ spec:
   affinity:
     {{- if .Values.preferNode.enabled }}
     nodeAffinity:
+      {{- if eq (.Values.preferNode.mode | default "preferred") "required" }}
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: {{ .Values.preferNode.key }}
+                operator: In
+                values: [{{ .Values.preferNode.value | quote }}]
+      {{- else }}
       preferredDuringSchedulingIgnoredDuringExecution:
         - weight: 100
           preference:
@@ -76,6 +84,7 @@ spec:
               - key: {{ .Values.preferNode.key }}
                 operator: In
                 values: [{{ .Values.preferNode.value | quote }}]
+      {{- end }}
     {{- end }}
     {{- if .Values.antiAffinity.enabled }}
     podAntiAffinity:
