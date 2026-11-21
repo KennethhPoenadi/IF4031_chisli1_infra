@@ -21,7 +21,7 @@ keterbatasan topologi: `docs/topologi-arsitektur.md` di repositori aplikasi.
 ## Deploy
 
 Prasyarat: cluster K3s dua node `Ready` ([docs/k3s-cluster.md](docs/k3s-cluster.md)), self-hosted runner berlabel `k8s-local`
-dengan kubeconfig cluster, dan file Secret `~/.xops/prod.env` di runner (lihat [Secret, variable, dan environment](#secret-variable-dan-environment)).
+dengan kubeconfig cluster, dan file Secret `~/.xops/prod.env` serta `~/.xops/dev.env` di runner (lihat [Secret, variable, dan environment](#secret-variable-dan-environment)).
 
 **Satu perintah:** jalankan workflow CI di branch `main` (push ke `main` juga memicunya):
 
@@ -67,9 +67,9 @@ kubectl get pods -n observability
 | `platform/observability/` | Values Prometheus, Loki, Tempo, Alloy, Grafana, dan dashboard sebagai kode (`dashboards/*.json`, dihasilkan `scripts/gen-dashboards.py`) |
 | `charts/microservice/` | Satu chart generik: Deployment atau StatefulSet, Service, Ingress, HPA, ConfigMap, NetworkPolicy, PodDisruptionBudget |
 | `envs/dev`, `envs/prod` | Values per service dan per environment |
-| `envs/<env>/tags/` | Tag image per service, ditulis oleh job `release-*` dan dibaca Argo CD |
-| `argocd/` | `ApplicationSet` yang menghasilkan 18 Application (9 workload × 2 environment) |
-| `policies/kyverno/` | Tujuh ClusterPolicy dan satu ClusterRole untuk membaca HPA |
+| `envs/<env>/tags/` | Tag image per service. `envs/prod/tags/` ditulis oleh job `release-prod` dan dibaca Argo CD |
+| `argocd/` | `ApplicationSet` yang menghasilkan 12 Application (12 workload, hanya environment `prod`) |
+| `policies/kyverno/` | Sebelas ClusterPolicy dan satu ClusterRole untuk membaca HPA |
 | `policies/tests/` | Tes Kyverno CLI dan manifest pelanggaran untuk uji penolakan di cluster |
 | `scripts/` | Script yang dipanggil pipeline, dan dapat dijalankan lokal |
 | `tests/k6/` | Skrip uji beban untuk HPA |
@@ -79,9 +79,9 @@ kubectl get pods -n observability
 ## Desain singkat
 
 - **GitOps, pull.** Argo CD di dalam cluster menarik konfigurasi dari repositori ini (`main`) dan menerapkannya dengan `prune` dan `selfHeal`. Self-hosted runner tetap memerlukan akses API untuk bootstrap platform, policy, Secret, dan pengujian M2; sinkronisasi workload berikutnya dilakukan Argo CD.
-- **Rilis adalah commit tag.** Workflow aplikasi mengirim `repository_dispatch` (`deploy-dev`) berisi `image_tag` ke repo ini. Job `release-dev` menulis `envs/dev/tags/<service>.yaml` lalu commit `[skip ci]`. Promosi ke prod dilakukan manual lewat workflow `Release` (`target: prod`), yang menyalin tag dari dev, menunggu persetujuan reviewer environment `prod-release`, dan hanya berjalan sukses untuk akun `PROD_APPROVER`.
+- **Rilis adalah commit tag.** Workflow aplikasi mengirim `repository_dispatch` berisi `image_tag` ke repo ini (nama event `deploy-dev` masih diterima, begitu juga `deploy-prod`). Job `release-prod` menulis `envs/prod/tags/<service>.yaml` lewat `scripts/set-tags.sh`, lalu commit `[skip ci]`. Tidak ada tahap dev dan tidak ada persetujuan manual. Rilis manual: workflow `Release` dengan input `image_tag`.
 - **Satu chart untuk semua workload.** Perbedaan antar service dan environment hanya ada di `envs/`.
-- **Dua environment.** `dev` memakai namespace `dev`. `prod` memakai namespace kontrak M2, `sistem-informasi-kebencanaan-bnpb` (dipetakan oleh `ns_for` di `scripts/env.sh` dan oleh `argocd/applicationset.yaml`). Untuk demo, hanya environment `prod` yang perlu berjalan.
+- **Hanya `prod` yang di-deploy.** `prod` memakai namespace kontrak M2, `sistem-informasi-kebencanaan-bnpb` (dipetakan oleh `ns_for` di `scripts/env.sh` dan oleh `argocd/applicationset.yaml`). Environment `dev` (namespace `dev`) dinonaktifkan di `ApplicationSet` karena node tidak muat menampung dev dan prod sekaligus. Values `envs/dev/` tetap ada, dan dev dapat diaktifkan lagi dengan menghapus tanda komentar di `argocd/applicationset.yaml`. Namespace `dev` dan Secret-nya tetap dibuat oleh `platform.sh` dan job `secrets`.
 - **Kyverno `Enforce`.** Pelanggaran ditolak saat admission, meskipun lolos CI.
 
 ### Kontrak Milestone 2
@@ -101,6 +101,10 @@ kubectl get pods -n observability
 
 | Policy | Menegakkan |
 | --- | --- |
+| `require-role-label` | Label `role` dengan nilai dari daftar kontrak M2 |
+| `enforce-resource-class` | Memori requests dan limits sesuai kelas role (Lampiran B) |
+| `store-local-storage` | Volume `role=store` di disk lokal node |
+| `forbid-privileged` | Pod aplikasi tidak privileged dan tidak memakai jaringan atau PID host |
 | `restrict-image-repositories` | Image hanya dari repositori image kelompok di `ghcr.io` |
 | `disallow-latest-tag` | Tag harus versi, bukan `latest` atau `<service>-latest` |
 | `require-container-security` | `runAsNonRoot`, `readOnlyRootFilesystem`, `allowPrivilegeEscalation: false` |
@@ -113,22 +117,47 @@ kubectl get pods -n observability
 
 ## Workflow
 
-Didefinisikan di `.github/workflows/ci.yml` (validate dan platform) dan `.github/workflows/release.yml` (rilis dev dan prod).
+Didefinisikan di `.github/workflows/ci.yml` (validate dan platform), `.github/workflows/release.yml` (rilis prod), dan
+`.github/workflows/m2-ops.yml` (pengujian M2, lihat [Pengujian M2](#pengujian-m2-workflow-m2-ops)).
 
 | Stage | Job | Fungsi |
 | --- | --- | --- |
 | `validate` | `validate` | Sintaks script, `terraform validate`, `helm lint`, cakupan HPA, `kubeconform`, `kyverno test` |
 | `mirror` | `mirror-images` | Menyalin MongoDB dan RabbitMQ ke repositori image kelompok di `ghcr.io` |
 | `cluster` | `cluster` | Membuat cluster `kind` untuk development atau memvalidasi cluster K3s demo |
-| `platform` | `platform` | Traefik, metrics-server, Kyverno, Argo CD, dan namespace `dev` dan `prod` |
+| `platform` | `platform` | Traefik, metrics-server, Kyverno, KEDA, Argo CD, dan namespace `dev` dan `sistem-informasi-kebencanaan-bnpb` |
 | `policies` | `policies` | Menerapkan policy, menunggu Ready, lalu menguji penolakan manifest pelanggaran di cluster |
-| `secrets` | `secrets` (matriks `dev`, `prod`) | Secret `registry-credentials` (pull image) dan `app-secrets` per namespace |
+| `secrets` | `secrets` (matriks `dev`, `prod`) | Secret `registry-credentials` (pull image), `app-secrets`, `rabbitmq-keda`, dan `llm-credentials` (bila `LLM_*` lengkap) per namespace. Gagal bila `~/.xops/<env>.env` tidak ada |
 | `bootstrap` | `bootstrap-argocd` | Menerapkan `ApplicationSet` |
 | `tester-agent` | `tester-agent` | Memasang Tester Agent dari manifest yang di-pin. `continue-on-error` |
 | `observability` | `observability` | Prometheus, Loki, Tempo, Alloy, dan Grafana di namespace `observability`. `continue-on-error`, tidak memblokir deploy |
 | `release` | `release-prod` | Menulis tag prod langsung, dipicu oleh workflow aplikasi atau manual |
 
-Push ke `main` menjalankan `validate` sampai `observability`; pull request hanya menjalankan `validate` (di runner GitHub). Workflow `Release` dipicu aplikasi atau manual. Job yang menyentuh cluster berjalan di self-hosted runner berlabel `k8s-local`. Untuk development, pastikan `docker`, `kubectl`, `helm`, `terraform`, dan `kind` ada di `PATH`. Untuk demo K3s, runner memerlukan `kubectl`, `helm`, akses jaringan ke API Node A, dan kubeconfig yang valid.
+Push ke `main` menjalankan `validate` sampai `observability`; pull request hanya menjalankan `validate` (di runner GitHub). Workflow `Release` dipicu aplikasi atau manual.
+
+### Pengujian M2 (workflow `m2-ops`)
+
+Job berjalan di self-hosted runner dan menyimpan hasilnya sebagai artifact workflow (30 hari).
+
+| Job | Pemicu | Isi |
+| --- | --- | --- |
+| `tester-agent-compat` | Push ke `main` yang mengubah `envs/`, `charts/`, `policies/`, atau skrip Tester Agent; atau manual | `scripts/tester-agent-compat.sh`: manifest Tester Agent dapat dipasang tanpa diubah, setiap pod aplikasi berlabel `role` yang sah, tidak ada NetworkPolicy/ResourceQuota/LimitRange yang menghalangi Tester Agent, dan daftar skenario dapat dibaca. Input `practice` ikut menjalankan satu skenario latihan. Hasil di `evidence/tester-agent-compat/` |
+| `game-day` | Manual | `scripts/game-day.sh`: menjalankan skenario Tester Agent berurutan (bawaan `kill-store wipe-node clock-skew partition kill-leader schema`) dengan jendela pemulihan per skenario (bawaan 180 detik) tanpa intervensi, opsional sambil menjalankan k6, lalu mengumpulkan bukti P5 kriteria 6-8: checksum Audit API antar skenario (count yang turun berarti ada HazardEvent hilang) dan SLO jalur peringatan dari Prometheus |
+| `load-test` | Manual | `scripts/load-test.sh`: k6 dari repositori aplikasi (bawaan `tests/k6/p2-sustained.js`, 10.000 VU, 150 detik) sambil mengubah replika Aggregator menurut `scale_plan` (bawaan `0:3 50:5 100:2`) |
+| `p5-priority` | Manual | Job `load-test` dengan skrip tetap `tests/k6/p5-priority.js` selama 45 detik, tanpa perubahan replika |
+
+```
+gh workflow run m2-ops.yml -f job=tester-agent-compat -f practice=<nama-skenario>
+gh workflow run m2-ops.yml -f job=game-day -f recovery_seconds=180
+gh workflow run m2-ops.yml -f job=load-test -f vus=10000 -f duration=150s -f scale_plan="0:3 50:5 100:2"
+gh workflow run m2-ops.yml -f job=p5-priority
+```
+
+`game-day` dan `load-test` memuat `~/.xops/prod.env` di runner (token Audit dan kredensial client) dan mengambil skrip k6 dari
+repositori aplikasi pada ref `app_ref` (bawaan `main`). Skrip yang sama dapat dijalankan langsung dari runner dengan variabel
+lingkungan yang sama (`RUN_PRACTICE`, `SCENARIOS`, `RECOVERY_SECONDS`, `K6_SCRIPT`, `VUS`, `DURATION`, `SCALE_PLAN`,
+`MAX_ERROR_RATE`, `BASE_URL`, `AUTH_BASE_URL`, `AUDIT_URL`, `AUDIT_TOKEN`, `PROM_URL`, `OUT_DIR`); daftar lengkapnya di komentar
+awal tiap skrip. Job yang menyentuh cluster berjalan di self-hosted runner berlabel `k8s-local`. Untuk development, pastikan `docker`, `kubectl`, `helm`, `terraform`, dan `kind` ada di `PATH`. Untuk demo K3s, runner memerlukan `kubectl`, `helm`, akses jaringan ke API Node A, dan kubeconfig yang valid.
 
 ## Observabilitas
 
@@ -193,6 +222,10 @@ Diisi di Settings → Secrets and variables → Actions. Nilainya tidak disimpan
 | --- | --- | --- |
 | `GITOPS_TOKEN` | Secret | Fine-grained PAT (Contents read/write pada repo ini) untuk push commit tag dari `release-prod` |
 | `APP_IMAGE_NAME` | Variable | Nama image di `ghcr.io/<owner>/`. Harus sama dengan yang dibangun repositori aplikasi |
+| `APP_REPOSITORY` | Variable | Repositori aplikasi (`owner/repo`), sumber skrip k6 untuk `m2-ops` |
+| `APP_READ_TOKEN` | Secret (opsional) | PAT baca repositori aplikasi bila repositori itu private. Kosong berarti memakai `github.token` |
+| `LOAD_TEST_BASE_URL`, `LOAD_TEST_AUTH_URL` | Variable | Alamat API client dan auth-service yang dituju k6 (`load-test`) |
+| `AUDIT_URL`, `PROM_URL` | Variable | Alamat Audit API dan Prometheus yang diperiksa `game-day` |
 
 Tidak ada GitHub Environment yang perlu dibuat: rilis ke prod berjalan tanpa gerbang persetujuan.
 
@@ -203,7 +236,17 @@ Secret aplikasi (daftar di `scripts/secret-keys.txt`) dan kredensial pull image 
 ~/.xops/prod.env
 ```
 
-Isi kedua file sama bentuknya (nilai boleh beda): 18 baris `KEY=value` dari `secret-keys.txt`, ditambah `REGISTRY_USER=<username>` dan `REGISTRY_PASS=<classic PAT, hanya scope read:packages>`.
+Kedua file wajib ada karena job `secrets` berjalan untuk `dev` dan `prod`, meskipun hanya `prod` yang di-deploy. Isinya sama bentuknya
+(nilai boleh beda): satu baris `KEY=value` untuk setiap kunci di `secret-keys.txt` (19 kunci), ditambah `REGISTRY_USER=<username>` dan
+`REGISTRY_PASS=<classic PAT, hanya scope read:packages>`. Opsional: `LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY` untuk
+situation-analyst.
+
+Kunci bertanda `?` di `secret-keys.txt` boleh kosong tanpa menggagalkan `create-secrets.sh`, tetapi wajib diisi di `prod.env` untuk
+demo: `AUDIT_TOKEN` dan `DASHBOARD_TOKEN` (Audit API dan dashboard analitik) serta `SATELLITE_TOKEN` (token kelompok Feed Satelit;
+tanpa token ini `satellite-ingestor` gagal start). Isi `SATELLITE_TOKEN` hanya di `prod.env`: Feed Satelit menutup koneksi lain
+yang memakai token yang sama (`429 too_many_connections`). Setelah mengubah file ini, jalankan ulang job `secrets` (atau
+`create-secrets.sh prod`) lalu `kubectl rollout restart deploy/<service> -n sistem-informasi-kebencanaan-bnpb`, karena Secret
+dibaca saat pod start.
 
 File di-`source` oleh shell, jadi nilai dengan spasi atau karakter khusus perlu diberi kutip. Jalankan `chmod 600` pada keduanya.
 
