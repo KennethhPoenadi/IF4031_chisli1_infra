@@ -21,14 +21,30 @@ autoscaling:
 
 secretRefs: [app-secrets]
 
+# Mode ujian (demo): Secret pantai-exam berisi key, PANTAI_PROFILE, dan PANTAI_SEED dari email asisten. Semuanya opsional:
+# selama Secret belum dibuat, sensor berjalan dengan profil bawaan seperti biasa.
+extraEnv:
+  - name: PANTAI_PROFILE
+    valueFrom: { secretKeyRef: { name: pantai-exam, key: PANTAI_PROFILE, optional: true } }
+  - name: PANTAI_SEED
+    valueFrom: { secretKeyRef: { name: pantai-exam, key: PANTAI_SEED, optional: true } }
+
 # Image menyimpan kursornya di /data. Root filesystem tetap read-only (policy), jadi /data diberi volume
 # tersendiri. Tanpa ini kursor gagal disimpan dan setiap restart sensor mengulang dari awal (data basi).
 extraVolumes:
   - name: data
     emptyDir: {}
+  - name: pantai-key
+    secret:
+      secretName: pantai-exam
+      optional: true
+      items: [{ key: key, path: key }]
 extraVolumeMounts:
   - name: data
     mountPath: /data
+  - name: pantai-key
+    mountPath: /var/run/pantai
+    readOnly: true
 
 livenessProbe:
   httpGet: { path: /healthz, port: http }
