@@ -2,6 +2,9 @@ role: mock
 
 service:
   port: 8081
+  # Endpoint admin (/admin/schema-version, /admin/outage) hanya ada di pvmbg-mock. Tester Agent mengirim
+  # perubahan skema ke Service berlabel role=mock, jadi Service ini tidak diberi label itu.
+  omitRoleLabel: true
 
 env:
   BMKG_PORT: "8081"

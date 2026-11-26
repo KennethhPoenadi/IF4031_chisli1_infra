@@ -3,7 +3,11 @@ kind: Service
 metadata:
   name: {{ include "microservice.name" . }}
   labels:
-    {{- include "microservice.labels" . | nindent 4 }}
+    {{- $labels := include "microservice.labels" . | fromYaml }}
+    {{- if .Values.service.omitRoleLabel }}
+    {{- $_ := unset $labels "role" }}
+    {{- end }}
+    {{- toYaml $labels | nindent 4 }}
   {{- with .Values.service.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}

@@ -70,6 +70,9 @@ service:
   annotations: {}
   # Mis. PreferSameNode: kube-proxy mengutamakan endpoint di node yang sama dengan pengirim.
   trafficDistribution: ""
+  # true: Service tidak diberi label role. Pod tetap berlabel role (wajib oleh Kyverno). Tester Agent memilih
+  # Service role=mock sebagai sasaran endpoint admin, jadi hanya mock yang punya endpoint itu yang boleh berlabel.
+  omitRoleLabel: false
 
 env: {}
 secretRefs: []
